@@ -36,6 +36,20 @@ reaching into another step or the boundary was drawn wrong. Tests fail when a
 SKILL.md documents a command outside its scope, when a script has no change
 class, or when a skill and the manifest disagree.
 
+## Changing extraction is a measured change
+
+`gold/afc-gold-v1/` holds synthetic sources, the exact Step 0 selection they
+must produce, and the literals, claims and forbidden facts a correct Step 1
+preserves, covers and never invents. Step 0 is deterministic and asserted
+exactly; Step 1 is scored with `score_extraction_gold.py`, which never scores
+wording. `evaluate_card_health.py` measures a run against itself and stays;
+this measures a run against a known answer.
+
+A change to extraction behaviour that moves these numbers is either an
+improvement you can describe or a regression. If Step 0 selection changes,
+update `expected-step0.json` in the same change and say why — never to make a
+run pass.
+
 ## Changing a description is a measured change
 
 A harness picks a skill from its description, so a description is part of the

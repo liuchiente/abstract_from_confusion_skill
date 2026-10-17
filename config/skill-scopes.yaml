@@ -85,6 +85,7 @@ scripts:
   # operator commands.
   sync_skill_metadata.py: work
   score_skill_triggers.py: work
+  score_extraction_gold.py: read-only
 
   # --- mixed, by subcommand ---
   record_decision.py:

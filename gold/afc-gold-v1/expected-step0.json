@@ -1,0 +1,64 @@
+{
+  "gold_set": "afc-gold-v1",
+  "target_scope": "CB",
+  "scope_root": "sources",
+  "note": "Step 0 is deterministic: the parsers plus build_context_candidates.py give the same source map every run, so these are asserted exactly. Regenerate the sources with make_sources.py; never edit the fixtures by hand.",
+
+  "source_units": {
+    "total": 32,
+    "selected": 26
+  },
+
+  "per_file": {
+    "cb_spec.docx":    { "units": 13, "selected": 13 },
+    "cb_fields.xlsx":  { "units": 5,  "selected": 4 },
+    "cb_process.md":   { "units": 8,  "selected": 6 },
+    "cb_negation.md":  { "units": 3,  "selected": 3 },
+    "other_product.md":{ "units": 3,  "selected": 0 }
+  },
+
+  "structure": {
+    "nested_table_units": 2,
+    "uncached_formula_units": 1,
+    "merged_header_inherited_rows": 1,
+    "comment": "The docx nests a table inside a table cell; the xlsx has a merged header governing two columns and a formula cell with no cached value. A parser that stops recursing, drops the merged header, or invents a computed value changes these counts."
+  },
+
+  "must_be_selected": [
+    "cb_spec.docx::B000002",
+    "cb_spec.docx::B000004::T001::R0002",
+    "cb_spec.docx::B000004::T001::R0003",
+    "cb_spec.docx::B000006::T002::R0002::C002::N01::T003::R0002",
+    "cb_fields.xlsx::欄位定義::R000003"
+  ],
+
+  "must_not_be_selected": [
+    "other_product.md::TXT000001",
+    "other_product.md::TXT000002",
+    "other_product.md::TXT000003"
+  ],
+
+  "known_limitations": [
+    {
+      "id": "negation-selects-scope",
+      "units": ["cb_negation.md::TXT000001", "cb_negation.md::TXT000002", "cb_negation.md::TXT000003"],
+      "current": "selected",
+      "why": "Scope detection matches the product token anywhere in the text. cb_negation.md says 「與 CB 乘客險無關」 -- it names CB only to deny applicability -- and is selected for a CB run anyway, then propagates to the rest of the file by inheritance.",
+      "if_this_changes": "Detection learned to read the denial. That is an improvement: update `current` to \"unselected\" and move these ids into must_not_be_selected."
+    },
+    {
+      "id": "in-scope-file-section-loses-inheritance",
+      "units": ["cb_process.md::TXT000007", "cb_process.md::TXT000008"],
+      "current": "unselected",
+      "why": "cb_process.md is in scope (6 of 8 units selected), but section 3 never repeats 'CB' and the inheritance chain does not reach it, so the paragraph holding the Vietnamese message 'Tải lên thất bại' and the code 'E102' is dropped. The same literals survive via cb_spec.docx, which is why literal preservation still passes -- in a real source with the message in only one place, it would not.",
+      "if_this_changes": "Inheritance now covers a section inside an in-scope file. Update `current` and move these into must_be_selected."
+    },
+    {
+      "id": "within-boundary-miss-filed-as-outside",
+      "report_field": "signal_unselected_outside_boundary",
+      "current": 1,
+      "why": "The one unselected signal candidate is cb_process.md::TXT000008, a unit inside an in-scope file, but the run-level audit counts it under outside_boundary. AGENTS.md says signal_unselected_within_boundary is actionable while outside_boundary is not a finding, so this miss is filed as a non-finding.",
+      "if_this_changes": "The audit now buckets a unit by its file's eligibility rather than by its own scope match. Expect within_boundary to become 1 and outside_boundary 0."
+    }
+  ]
+}

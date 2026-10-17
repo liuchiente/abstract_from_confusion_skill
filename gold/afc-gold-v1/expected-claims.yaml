@@ -1,0 +1,99 @@
+version: 1
+
+# What extraction must preserve, cover, and never invent.
+#
+# A Card is model-authored prose. Asserting its text would test wording, fail on
+# every harmless rewrite, and teach everyone to ignore the result. So nothing
+# here asserts how a Card is phrased. It asserts the three things the
+# architecture says are not free:
+#
+#   literals   a string the source contains must appear verbatim in Evidence
+#   claims     each claim must be covered by some Card citing the right unit
+#   forbidden  a fact the source does not state must appear nowhere
+#
+# The forbidden list matters most. A Card claiming 「30 天」 where the source says
+# 「期限內」 is the failure this whole package exists to prevent, and no other
+# check in the suite detects it.
+
+literals:
+  - text: Tải lên thất bại
+    kind: Message
+    source_language: vi
+    units: [cb_spec.docx::B000004::T001::R0002, cb_process.md::TXT000008]
+    why: A Vietnamese UI message. Translating or normalizing it in Evidence is a
+         fidelity defect, not a style choice.
+  - text: Số hợp đồng không hợp lệ
+    kind: Message
+    source_language: vi
+    units: [cb_spec.docx::B000004::T001::R0003]
+  - text: E102
+    kind: Code
+    units: [cb_spec.docx::B000004::T001::R0002]
+  - text: E205
+    kind: Code
+    units: [cb_spec.docx::B000004::T001::R0003]
+  - text: "100"
+    kind: MaxLength
+    units: [cb_spec.docx::B000004::T001::R0002]
+    why: A length constraint read from a column the header governs. Losing it
+         means the header-to-row relationship was not preserved.
+  - text: "=COUNTA(欄位定義!A3:A4)"
+    kind: Formula
+    units: [cb_fields.xlsx::統計::R000001]
+    value_status: NO_CACHED_VALUE
+    optional: true
+    why: The workbook holds no computed result, so the formula is the fact.
+         Optional because the 統計 sheet never names CB and the unit is not
+         selected -- see the known limitation in expected-step0.json. If scope
+         inheritance ever reaches it, this becomes required.
+
+claims:
+  - id: cb-add-before-effective-date
+    requires_any_terms: [生效, 加買]
+    cited_units: [cb_spec.docx::B000002]
+    statement: CB allows adding passenger cover before the policy effective date.
+  - id: cb-add-blocked-after-deadline
+    requires_any_terms: [加買期限, 不允許, 超過]
+    cited_units: [cb_spec.docx::B000002]
+    statement: Past the add-on deadline the system does not allow adding cover.
+  - id: cb-deadline-is-product-configured
+    requires_any_terms: [加買期限, 商品設定]
+    cited_units: [cb_spec.docx::B000008]
+    statement: The add-on deadline is a period set by the product configuration.
+  - id: cb-upload-failure-message
+    requires_any_terms: [上傳, 失敗, E102]
+    cited_units: [cb_spec.docx::B000004::T001::R0002]
+    statement: Upload failure shows the source message and records code E102.
+  - id: cb-batch-window-rejects
+    requires_any_terms: [日結, 批次, 退回]
+    cited_units: [cb_spec.docx::B000006::T002::R0002::C002::N01::T003::R0002]
+    statement: During the daily batch an add-on request is rejected and shows E102.
+    why: This claim exists only inside a table nested in a table cell. A parser
+         that stops at the outer table loses it entirely.
+  - id: cb-insured-name-required
+    requires_any_terms: [被保人姓名, 必填]
+    cited_units: [cb_fields.xlsx::欄位定義::R000003]
+    statement: The insured name field is required, with a maximum length of 60.
+  - id: cb-process-requires-underwriting-review
+    requires_any_terms: [核保, 覆核]
+    cited_units: [cb_process.md::TXT000006]
+    statement: An add-on application must be reviewed by underwriting, and a
+               failed review returns it to the agent.
+
+forbidden:
+  - text: "30 天"
+    why: No source states a numeric deadline. The spec says 「加買期限」 and the
+         definition says it is product-configured. A Card naming a number has
+         invented it.
+  - text: "45 天"
+    why: 45 days is the 傷害險 deadline in other_product.md, which is outside the
+         CB scope. A CB Card carrying it has crossed the boundary.
+  - text: X999
+    why: An error code from the out-of-scope source.
+  - text: "3000"
+    why: A 車體險 deductible from cb_negation.md. That file is currently selected
+         for a CB run (see known_limitations), so its facts are reachable --
+         which is exactly why extraction must still not attribute them to CB.
+  - text: Lỗi tải lên khác
+    why: The out-of-scope Vietnamese message. Preserving a literal is only
+         correct inside the boundary it came from.

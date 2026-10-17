@@ -10,7 +10,7 @@ import re
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from afc_card_runtime.common import source_prefix, write_jsonl
+from afc_card_runtime.common import is_source_file, source_prefix, write_jsonl
 
 EXTENSIONS = {'.md', '.markdown', '.txt', '.rst', '.html', '.htm', '.csv', '.json', '.yaml', '.yml', '.xml'}
 BLOCK_TAGS = {'p', 'div', 'li', 'tr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article', 'br'}
@@ -48,12 +48,15 @@ def list_files(inputs, recursive):
         if not path.exists():
             raise FileNotFoundError(f'source path does not exist: {path}')
         if path.is_file():
-            if path.suffix.lower() in EXTENSIONS:
+            # A file named explicitly is taken at the caller's word, except for
+            # AFC's own directory metadata, which is never source material.
+            if path.suffix.lower() in EXTENSIONS and is_source_file(path):
                 result.append(path)
         else:
             paths = path.rglob('*') if recursive else path.iterdir()
             result.extend(item.resolve() for item in paths
                           if item.is_file() and item.suffix.lower() in EXTENSIONS
+                          and is_source_file(item)
                           and not any(part.startswith('.') for part in item.relative_to(path).parts[:-1]))
     return sorted(set(result), key=lambda item: str(item).casefold())
 

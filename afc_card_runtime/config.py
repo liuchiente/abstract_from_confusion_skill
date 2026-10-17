@@ -108,6 +108,15 @@ DEFAULTS = {
         'min_sample_for_rate_grading': 30,
     },
 
+    'gold': {
+        # Scoring a run against the gold set's known answers. A source string
+        # the gold set names must be preserved exactly -- there is no sensible
+        # floor below 1.0 for that -- while claim coverage allows for a claim a
+        # reviewer later judges not worth a Card.
+        'min_literal_preservation': 1.0,
+        'min_claim_coverage': 0.9,
+    },
+
     'skill_triggers': {
         # Share of trigger cases that must reach the intended skill. Selection
         # is probabilistic, so this is a floor on observed accuracy, not a

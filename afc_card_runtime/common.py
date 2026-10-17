@@ -26,6 +26,17 @@ MAX_WHOLE_RUN = 12
 TOKENIZER_VERSION = '2'
 
 
+# Files that live among the sources but are not source material: AFC's own
+# directory metadata, and OS litter. A parser that ingests afc-scope.md records
+# the boundary declaration as knowledge inside the boundary.
+IGNORED_SOURCE_FILES = frozenset({'afc-scope.md', '.DS_Store', 'Thumbs.db'})
+
+
+def is_source_file(path):
+    """Whether a file found beside the sources is itself source material."""
+    return Path(path).name not in IGNORED_SOURCE_FILES
+
+
 def read_jsonl(path):
     p = Path(path)
     if not p.exists():

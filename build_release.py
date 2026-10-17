@@ -13,7 +13,10 @@ VERSION = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
 # v0.8.6.zip, which is the one thing a release filename must never get wrong.
 PACKAGE = f'afc-card-experiment-v{VERSION}'
 ARCHIVE = ROOT.parent / (PACKAGE + '.zip')
-EXCLUDED_PARTS = {'.git', '.pytest_cache', '__pycache__', 'work', 'experiments'}
+# openspec/ holds change proposals for developing this package. Users get the
+# package, not its development workflow.
+EXCLUDED_PARTS = {'.git', '.pytest_cache', '__pycache__', 'work', 'experiments',
+                  'openspec'}
 EXCLUDED_NAMES = {'.DS_Store'}
 
 

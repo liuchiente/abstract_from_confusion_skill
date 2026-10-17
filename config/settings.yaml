@@ -69,6 +69,11 @@ card_health:
   unsupported_required: 0.0
   min_sample_for_rate_grading: 30
 
+gold:
+  # Floors for scripts/score_extraction_gold.py against gold/afc-gold-v1.
+  min_literal_preservation: 1.0
+  min_claim_coverage: 0.9
+
 skill_triggers:
   # Floor on observed skill-selection accuracy over config/skill-trigger-cases.yaml.
   min_accuracy: 0.9

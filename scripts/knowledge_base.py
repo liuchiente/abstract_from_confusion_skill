@@ -12,7 +12,7 @@ import sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from afc_card_runtime.common import read_jsonl
+from afc_card_runtime.common import IGNORED_SOURCE_FILES, read_jsonl
 from afc_card_runtime.config import package_version
 from afc_card_runtime.config import load_settings
 from afc_card_runtime.knowledge_store import (
@@ -43,7 +43,8 @@ DATASET_ALIASES = {
 }
 
 IGNORED_DIRS = {'.git', '.codex', '.agents', '.afc-card-experiment', 'afc-card-experiment-v0.6.0', 'afc-card-experiment-v0.7.0', 'afc-card-experiment-v0.8.0', 'afc-card-experiment-v0.8.1', 'afc-card-experiment-v0.8.2', 'afc-card-experiment-v0.8.3', 'afc-card-experiment-v0.8.4', 'afc-knowledge-base', 'node_modules', 'vendor', 'build', 'dist', 'target', '.gradle', '.idea', '.dart_tool', '.next', 'coverage'}
-IGNORED_FILES = {'afc-scope.md', '.DS_Store'}
+# The inventory and the parsers must agree on what is not source material.
+IGNORED_FILES = set(IGNORED_SOURCE_FILES)
 
 
 def run_id_now():

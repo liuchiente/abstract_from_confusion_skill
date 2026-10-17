@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["Box Link ID", "Source Box ID", "Relation Type", "Target Box ID", "Link Basis", "Status"],
+  "properties": {
+    "Box Link ID": {"type": "string", "pattern": "^BL-[0-9]{6}$"},
+    "Source Box ID": {"type": "string", "pattern": "^BOX-[0-9]{6}$"},
+    "Relation Type": {"enum": ["parent_of", "part_of", "related_to", "depends_on", "precedes", "uses_function", "shared_with"]},
+    "Target Box ID": {"type": "string", "pattern": "^BOX-[0-9]{6}$"},
+    "Link Basis": {"enum": ["Direct Source", "Structural Context", "Business Context Mapping", "Company Taxonomy", "Cross-Card Evidence", "Manual Configuration", "Review"]},
+    "Evidence": {"type": "string"},
+    "Source Context IDs": {"type": "array", "items": {"type": "string"}},
+    "Confidence": {"enum": ["High", "Medium", "Low"]},
+    "Status": {"enum": ["Confirmed", "Candidate", "Needs Review"]},
+    "Notes": {"type": "string"}
+  }
+}

@@ -1,6 +1,7 @@
 ---
 name: afc-boxes
-description: Build topology-aware AFC Knowledge Boxes as context boundaries for Cards. Creates Box nodes, evidence-backed Card-Box memberships, and Box-Box graph relations; hierarchy is only one relation type. Use as AFC Card Experiment Step 3.
+description: AFC Step 3: build the Knowledge Box graph — Box nodes as knowledge boundaries, evidence-backed Card-Box memberships, and Box-Box relations of which hierarchy is only one type. Use for 知識邊界/情境/功能/畫面分類/Box 圖/navigation. A Box is not a Scope and never changes one. Not for Card-to-Card relationships — that is afc-links.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # STEP 3 — Knowledge Box Graph
@@ -129,7 +130,7 @@ These are not duplicates because the label is `Back`.
 
 Note that a Box in the taxonomy is not a Scope. `傷害險` can be a Business Box
 that a Card is navigable through while being entirely outside the run's Active
-Scope. In v0.6, Scope comes from the explicit run target, the nearest source
+Scope. Scope comes from the explicit run target, the nearest source
 directory's `afc-scope.md`, and optionally the Business Context mapping; a Box
 or Box taxonomy never defines the source boundary.
 
@@ -219,3 +220,28 @@ queries start at the root.
 - Hierarchy is not the only navigation model.
 - A Card exists once; sharing a Concept or a label is not grounds for merging.
 - Box topology never overrides source/product Scope.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-boxes` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `resolve_boxes.py`
+- `validate_boxes.py`
+- `validate_schema.py`
+
+Not this skill's job:
+
+- changing a Card's Scope or Product Context → `afc-cards`
+- creating or retyping Card Links → `afc-links`
+
+`./afc --scope afc-boxes` prints this boundary.
+<!-- afc:scope:end -->

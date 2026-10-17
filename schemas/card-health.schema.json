@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "health_schema_version",
+    "metrics",
+    "metric_states",
+    "review_samples",
+    "overall_status",
+    "primary_loop_route",
+    "recommendations"
+  ],
+  "properties": {
+    "health_schema_version": {
+      "type": "string"
+    },
+    "overall_status": {
+      "enum": [
+        "READY",
+        "REVIEW_RECOMMENDED",
+        "RERUN_RECOMMENDED"
+      ]
+    },
+    "primary_loop_route": {
+      "type": "string"
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "unaccounted_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "saturation_miss_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "rerun_novelty_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unsupported_claim_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "atomicity_issue_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "unresolved_review_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "metric_states": {
+      "type": "object",
+      "description": "Grade per metric. INSUFFICIENT_SAMPLE / UNVERIFIED_SAMPLE mean the rate was not graded because the review sample was too small or not drawn by sample_units.py; neither can reach overall_status READY.",
+      "properties": {
+        "unaccounted": {
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "UNKNOWN",
+            "INSUFFICIENT_SAMPLE",
+            "UNVERIFIED_SAMPLE"
+          ]
+        },
+        "saturation": {
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "UNKNOWN",
+            "INSUFFICIENT_SAMPLE",
+            "UNVERIFIED_SAMPLE"
+          ]
+        },
+        "novelty": {
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "UNKNOWN",
+            "INSUFFICIENT_SAMPLE",
+            "UNVERIFIED_SAMPLE"
+          ]
+        },
+        "unsupported": {
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "UNKNOWN",
+            "INSUFFICIENT_SAMPLE",
+            "UNVERIFIED_SAMPLE"
+          ]
+        },
+        "atomicity": {
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "UNKNOWN",
+            "INSUFFICIENT_SAMPLE",
+            "UNVERIFIED_SAMPLE"
+          ]
+        },
+        "review": {
+          "enum": [
+            "GREEN",
+            "YELLOW",
+            "RED",
+            "UNKNOWN",
+            "INSUFFICIENT_SAMPLE",
+            "UNVERIFIED_SAMPLE"
+          ]
+        }
+      },
+      "additionalProperties": {
+        "enum": [
+          "GREEN",
+          "YELLOW",
+          "RED",
+          "UNKNOWN",
+          "INSUFFICIENT_SAMPLE",
+          "UNVERIFIED_SAMPLE"
+        ]
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "review_samples": {
+      "type": "object",
+      "description": "Per-purpose sample provenance that gates whether a rate may be graded.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "gate": {
+            "enum": [
+              "OK",
+              "UNKNOWN",
+              "INSUFFICIENT_SAMPLE",
+              "UNVERIFIED_SAMPLE"
+            ]
+          },
+          "sample_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "integrity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "min_detectable_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "evidence_coverage": {
+      "type": "object"
+    },
+    "thresholds": {
+      "type": "object"
+    },
+    "human_decision_required": {
+      "type": "boolean"
+    }
+  },
+  "title": "AFC Card Extraction Health",
+  "additionalProperties": true
+}

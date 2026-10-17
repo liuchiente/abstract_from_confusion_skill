@@ -1,6 +1,7 @@
 ---
 name: afc-workspace
-description: Manage AFC knowledge workspaces that route multiple source folders to domain-specific Knowledge Bases by KB ID, then run ingestion, updates, queries, and portable releases.
+description: Route several source folders to several Knowledge Bases by KB ID: register KBs and roots, resolve which KB a task belongs to, and run inventory, queries and exports against the one selected. Use for 多個知識庫/切換知識庫/註冊來源資料夾/KB ID/workspace catalog. Extraction itself is afc-pipeline; publishing a release is afc-update.
+allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # AFC Workspace — route source folders by KB ID
@@ -84,3 +85,28 @@ once per inventory.
 
 For command examples, setup and recovery procedures, read the installed
 `OPERATIONS.md` at `$(./afc --home)/OPERATIONS.md`.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **release** changes. Set
+`AFC_SKILL=afc-workspace` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `check_environment.py`
+- `knowledge_base.py`
+- `workspace.py`
+
+Not this skill's job:
+
+- extracting knowledge from the folders it routes → `afc-pipeline`
+- publishing a release in a KB it selected → `afc-update`
+
+`./afc --scope afc-workspace` prints this boundary.
+<!-- afc:scope:end -->

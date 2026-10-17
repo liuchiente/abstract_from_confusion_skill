@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["Query", "Mode"],
+  "properties": {
+    "Query": {"type": "string"},
+    "Mode": {"enum": ["auto", "field", "card", "relation", "compare"]},
+    "Requested Business Contexts": {"type": "array", "items": {"type": "string"}},
+    "Detected Business Contexts": {"type": "array", "items": {"type": "string"}},
+    "Resolved Scopes": {"type": "array", "items": {"type": "string"}},
+    "Scope Resolution Source": {"type": "string"},
+    "Seed Boxes": {"type": "array"},
+    "Hard Boundary Boxes": {"type": "array"},
+    "Hierarchy Boundary Boxes": {"type": "array"},
+    "Box Topology Expansion": {"type": "array"},
+    "Box Hop Count": {"type": "integer", "minimum": 0, "maximum": 1},
+    "Box Relations Used": {"type": "array", "items": {"type": "string"}},
+    "Detected Intent": {"type": "string"},
+    "Selected Retrieval Mode": {"type": "string"},
+    "Card Type Filter": {"type": "array", "items": {"type": "string"}},
+    "Card Link Types Used": {"type": "array", "items": {"type": "string"}},
+    "Card Hop Count": {"type": "integer", "minimum": 0, "maximum": 1},
+    "Top K": {"type": "integer"},
+    "Field Results": {"type": "array"},
+    "Card Results": {"type": "array"},
+    "Comparison": {"type": "object"}
+  }
+}

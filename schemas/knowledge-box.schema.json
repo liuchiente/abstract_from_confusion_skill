@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["Box ID", "Box Type", "Name", "Canonical Key", "Status"],
+  "properties": {
+    "Box ID": {"type": "string", "pattern": "^BOX-[0-9]{6}$"},
+    "Box Type": {"enum": ["Business", "Scenario", "Function", "Screen", "Inbox"]},
+    "Name": {"type": "string", "minLength": 1},
+    "Canonical Key": {"type": "string", "minLength": 1},
+    "Aliases": {"type": "array", "items": {"type": "string"}},
+    "Description": {"type": "string"},
+    "Scope Hints": {"type": "array", "items": {"type": "string"}},
+    "Source Context IDs": {"type": "array", "items": {"type": "string"}},
+    "Status": {"enum": ["Confirmed", "Candidate", "Needs Review"]},
+    "Notes": {"type": "string"},
+    "Parent Box IDs": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^BOX-[0-9]{6}$"},
+      "description": "Deprecated migration-only field. New topology must be represented by Box Links."
+    }
+  }
+}

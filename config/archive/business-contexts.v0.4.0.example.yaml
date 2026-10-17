@@ -1,0 +1,27 @@
+version: 1
+
+# Business Context is a company-approved retrieval/extraction taxonomy.
+# It maps a high-level business term to one or more source/product scopes.
+# It does NOT rewrite the Product Context stored on source Cards.
+business_contexts:
+  - context: 車險
+    aliases:
+      - 車險
+    scopes:
+      - CA
+      - CB
+    description: 車險高階業務範圍；查詢或萃取時解析為 CA 與 CB。
+
+  - context: CA
+    aliases:
+      - CA
+    scopes:
+      - CA
+    description: CA 單一商品範圍。
+
+  - context: CB
+    aliases:
+      - CB
+    scopes:
+      - CB
+    description: CB 單一商品範圍。

@@ -1,6 +1,7 @@
 ---
 name: afc-publish
-description: Publish and reopen-validate AFC Card, Evidence, Card-Link, Box-Graph, Context and coverage datasets as machine-friendly JSONL plus a human review Excel. Use as AFC Card Experiment Step 5.
+description: AFC Step 5: write and reopen-validate the Card, Evidence, Card-Link, Box-Graph, Context and coverage datasets as JSONL plus a human-review Excel, then stage them against the accepted release so a reviewer has proposals. Use for 輸出資料集/發佈候選/產出 Excel/stage proposals. Staging is not accepting: the per-proposal decisions and the publish belong to afc-update.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # STEP 5 — Dataset publish and validation
@@ -17,14 +18,37 @@ Publish a machine-friendly dataset for topology-aware retrieval, keep Excel for
 human inspection, and preserve full extraction and relationship traceability.
 JSONL is canonical; Excel is for review only and is never read back as source.
 
-## Persistent release boundary (v0.6)
+## Persistent release boundary and Card quality gate
 
 Step 5 validates and writes this run's candidate outputs; it does not accept
 them into the persistent Knowledge Base. After reviewing these artifacts, use
 `knowledge_base.py stage` to diff them against the current release. Every
 proposal needs an explicit human `accept`, `reject`, or `defer` decision before
-`knowledge_base.py publish` can advance the release pointer. Do not treat a
-successful Step 5 artifact export as an accepted knowledge update.
+`knowledge_base.py publish` can advance the release pointer. Stage the exact
+current Step 1 health report with `--health-report work/step-card-1-health.json`;
+the runtime binds its hash and status to the staged run. Publication is blocked
+when Card health is not `READY`, even if every proposal has been accepted or a
+pipeline decision allowed continuing to Links. To publish such a release, a
+reviewer must separately provide `--accept-quality-risk-by` and
+`--quality-risk-rationale`. This records an explicit quality-risk acceptance in
+the immutable release manifest. A request to continue the pipeline is not a
+quality waiver.
+
+Step 5 stages, so that a reviewer has proposals to look at. Recording the
+decisions and advancing the release pointer is `afc-update`: this step does not
+publish, and a staged run is not an accepted one.
+
+```bash
+./afc knowledge_base.py stage --kb-root "$AFC_KB_ROOT" --run-id "$RUN" \
+  --candidate-dir output --health-report work/step-card-1-health.json
+./afc knowledge_base.py validate --kb-root "$AFC_KB_ROOT"
+```
+
+Report the staged run ID and the proposal count, then hand over to `afc-update`
+for the per-proposal decisions and the publish. When Card health is not `READY`,
+publication stays blocked there until a reviewer separately provides
+`--accept-quality-risk-by` and `--quality-risk-rationale`; a request to continue
+the pipeline is not a quality waiver.
 
 ## Outputs
 
@@ -98,3 +122,34 @@ status; change-log entries added this run; and the Excel reopen result.
 Do not add vector embeddings by default. Benchmark Box-aware hybrid retrieval
 first — `afc-validate`'s retrieval regression layer is where that comparison
 belongs.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-publish` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `check_pipeline_artifacts.py`
+- `export_cards.py`
+- `knowledge_base.py` — only `stage, validate, index`
+- `validate_boxes.py`
+- `validate_cards.py`
+- `validate_coverage.py`
+- `validate_evidence.py`
+- `validate_links.py`
+- `validate_schema.py`
+
+Not this skill's job:
+
+- accepting proposals or publishing a release → `afc-update`
+- changing a Card, Link or Box to make validation pass → `afc-curate`
+
+`./afc --scope afc-publish` prints this boundary.
+<!-- afc:scope:end -->

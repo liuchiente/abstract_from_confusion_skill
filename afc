@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# AFC launcher.
+#
+# v0.4.1 had two incompatible path conventions -- SKILL.md used `../../scripts/`
+# (relative to the skill directory) while README.md used `scripts/` (relative to
+# the repo root) -- and install_codex.sh rewrote every SKILL.md to patch the
+# difference. Nothing told the agent which directory to run from, so path errors
+# were the normal case.
+#
+# This launcher removes the problem: it finds the AFC runtime itself, resolves
+# any argument that is an existing path to an absolute one, then runs the script
+# from inside the runtime. Every relative path in a skill (work/, output/,
+# config/, input/) therefore always means the same directory.
+#
+#   ./afc parse_word.py input/spec.docx -o work/step-card-0-word-source-units.jsonl
+#   ./afc --home            # print the resolved runtime directory
+#   ./afc --list            # list available scripts
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export AFC_PROJECT_ROOT="${AFC_PROJECT_ROOT:-$SELF_DIR}"
+if [ -n "${AFC_HOME:-}" ] && [ -d "${AFC_HOME}/scripts" ]; then
+  HOME_DIR="$(cd "$AFC_HOME" && pwd)"
+elif [ -d "$SELF_DIR/.afc-card-experiment/scripts" ]; then
+  HOME_DIR="$SELF_DIR/.afc-card-experiment"
+elif [ -d "$SELF_DIR/scripts" ]; then
+  HOME_DIR="$SELF_DIR"
+else
+  echo "afc: cannot locate the AFC runtime (looked for scripts/ beside $SELF_DIR)" >&2
+  exit 2
+fi
+
+PYTHON="${AFC_PYTHON:-python3}"
+PYTHON_VERSION="$("$PYTHON" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null)" || {
+  echo "afc: Python 3.10 or newer is required. Set AFC_PYTHON to a Python 3.10+ interpreter." >&2
+  exit 2
+}
+if ! "$PYTHON" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'; then
+  echo "afc: Python 3.10 or newer is required; selected interpreter is Python $PYTHON_VERSION. Set AFC_PYTHON to a Python 3.10+ interpreter." >&2
+  exit 2
+fi
+
+case "${1:-}" in
+  --home) echo "$HOME_DIR"; exit 0 ;;
+  --scope)
+    # Print the declared scope of a skill: what it may run and what it hands off.
+    shift
+    exec "$PYTHON" "$HOME_DIR/scripts/check_skill_scope.py" --explain "${1:-}" ;;
+  --list)
+    for f in "$HOME_DIR"/scripts/*.py; do echo "$(basename "$f")"; done
+    exit 0 ;;
+  ''|-h|--help)
+    echo "usage: afc <script.py> [args...]    run an AFC script with paths resolved"
+    echo "       afc --home | --list | --scope <skill>"
+    echo ""
+    echo "With AFC_SKILL set to the skill being followed, a command outside that"
+    echo "skill's declared scope is refused (see config/skill-scopes.yaml)."
+    exit 0 ;;
+esac
+
+SCRIPT="$1"; shift
+[ -f "$HOME_DIR/scripts/$SCRIPT" ] || { echo "afc: no such script: $SCRIPT (try: afc --list)" >&2; exit 2; }
+
+# Absolutise arguments that name an existing path, so they survive the cd below.
+#
+# "Exists in the current directory" alone is not enough to decide that an
+# argument is a path: with a product folder named CA in the current directory,
+# `--target-scope CA` was rewritten to /abs/path/CA and recorded as the Scope.
+# So an option's value is only treated as a path when it looks like one (it
+# contains a separator) or is an existing regular file. A positional argument
+# may still be a bare directory name, which is how `parse_word.py input` works.
+args=()
+prev=''
+for arg in "$@"; do
+  take=0
+  if [ -e "$arg" ]; then
+    case "$arg" in
+      */*|~*) take=1 ;;                       # looks like a path
+      *) if [ -f "$arg" ]; then take=1         # a bare file name
+         elif [ -d "$arg" ]; then
+           case "$prev" in -*) take=0 ;;       # the value of an option: leave it
+           *) take=1 ;;                        # a positional directory
+           esac
+         fi ;;
+    esac
+  fi
+  if [ "$take" = 1 ]; then
+    d="$(cd "$(dirname "$arg")" && pwd)"
+    args+=("$d/$(basename "$arg")")
+  else
+    args+=("$arg")
+  fi
+  prev="$arg"
+done
+
+cd "$HOME_DIR"
+export AFC_HOME="$HOME_DIR"
+
+# A skill that quietly does the next step's work is a silent failure, so the
+# boundary each SKILL.md states is enforced here rather than trusted. AFC_SKILL
+# names the skill being followed; with it unset this is a direct operator
+# command and nothing is checked.
+if [ -n "${AFC_SKILL:-}" ] && [ -f "$HOME_DIR/scripts/check_skill_scope.py" ]; then
+  "$PYTHON" "scripts/check_skill_scope.py" --skill "$AFC_SKILL" --script "$SCRIPT" \
+    -- ${args[@]+"${args[@]}"} || exit $?
+fi
+
+exec "$PYTHON" "scripts/$SCRIPT" ${args[@]+"${args[@]}"}

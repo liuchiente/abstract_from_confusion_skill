@@ -1,0 +1,6 @@
+{
+  "name": "afc-card-experiment",
+  "version": "9.1",
+  "description": "Card-centric AFC with document-aware PDF extraction, atomic Evidence-grounded Cards, governed knowledge updates, a separate quality-to-publish gate, portable releases, and a rebuildable SQLite/FTS query index.",
+  "skills": "./skills/"
+}

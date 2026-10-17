@@ -1,0 +1,28 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+input/*
+!input/.gitkeep
+work/*.jsonl
+work/*.json
+work/query-runs/*
+!work/query-runs/.gitkeep
+work/query-index/*
+!work/query-index/.gitkeep
+work/delta/*
+!work/delta/.gitkeep
+work/source-media/
+work/*_media/
+output/*
+!output/.gitkeep
+
+# Local pilot runs. build_release.py already excludes these from the package,
+# and they hold VERBATIM extracted text from third-party source documents --
+# an Evidence Record is by design a near-complete copy of its source, so these
+# artifacts are the source material, not code. Keep them off a shared remote.
+experiments/
+
+# Release archives are built from a tag, not tracked.
+afc-card-experiment-v*.zip
+.DS_Store

@@ -1,6 +1,7 @@
 ---
 name: afc-discuss
-description: Investigate and discuss a reported gap, conflict, or outdated fact against one accepted AFC Knowledge Base, collecting source evidence and a human-reviewed conclusion before any knowledge update.
+description: Investigate a reported gap, conflict or outdated fact against one accepted Knowledge Base, collect the source evidence on each side, and record a human-reviewed conclusion. Use for 這個答案不對/來源到底怎麼寫/兩份文件寫得不一樣/不一致/知識衝突/過時規則/缺漏/investigate a discrepancy. An ordinary factual question is afc-query, not a source scan; applying the conclusion is afc-update. Changes no knowledge itself.
+allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # AFC Knowledge Discussion
@@ -18,6 +19,22 @@ subtopics within the selected KB; if multiple subtopics could change the
 conclusion, ask which one the user means.
 
 ## Investigate and discuss
+
+Everything here reads. Confirm the release you are discussing is intact, then
+query it:
+
+```bash
+./afc knowledge_base.py validate --kb-root "$AFC_KB_ROOT"
+./afc knowledge_base.py query --kb-root "$AFC_KB_ROOT" \
+  --query '<the reported fact, in the user's own words>' \
+  --mode card -o work/query-runs/<case-id>-accepted.json
+```
+
+Ask the Evidence layer separately when the dispute is about what the source
+literally says — a `--mode` of `field` or a question naming a language reaches
+the source-preserving records rather than the normalized claim. With a workspace
+catalog, select the KB first with `workspace.py list` and
+`workspace.py query --kb-id <id> --query ...`.
 
 1. Query the accepted release and inspect relevant Cards and Evidence Records.
 2. Trace the reported fact to source units and locations. A search miss is not
@@ -47,8 +64,9 @@ Persist one Markdown record at
 - status: `Collecting`, `Needs More Evidence`, or `Ready for Update`
 - date and reviewer
 
-Mark `Ready for Update` only after the user confirms the discussion is captured
-well enough to form change proposals. If evidence is still missing, keep the case
+Write the record with your own file tools; no AFC command produces it. Mark
+`Ready for Update` only after the user confirms the discussion is captured well
+enough to form change proposals. If evidence is still missing, keep the case
 open and identify the next source or question needed. Do not edit release JSONL,
 stage proposals, or publish during this skill.
 
@@ -67,3 +85,30 @@ period conflict between the accepted knowledge and the selected source folder.
 Collect the evidence, explain the alternatives, and save a discussion record.
 Do not update the accepted release.
 ```
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **read-only** changes. Set
+`AFC_SKILL=afc-discuss` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `knowledge_base.py` — only `query, validate`
+- `query_fast.py`
+- `validate_schema.py`
+- `workspace.py` — only `query, list`
+
+Not this skill's job:
+
+- staging proposals, deciding them or publishing → `afc-update`
+- editing release JSONL → `afc-update`
+- choosing between conflicting source facts without the user → the user
+
+`./afc --scope afc-discuss` prints this boundary.
+<!-- afc:scope:end -->

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Mapping only: company-approved Business Context names/aliases to Scope IDs.
+     Directory boundaries and exclusions belong in each source folder's
+     afc-scope.md, never in this file. -->
+<context-map>
+  <scopes>
+    <scope id="CA" />
+    <scope id="CB" />
+  </scopes>
+  <business-contexts>
+    <business-context id="vehicle" name="車險">
+      <aliases>
+        <alias>汽車險</alias>
+        <alias>機車險</alias>
+      </aliases>
+      <maps-to>
+        <scope-ref id="CA" />
+        <scope-ref id="CB" />
+      </maps-to>
+      <description>公司核准的高階業務分類。</description>
+    </business-context>
+  </business-contexts>
+</context-map>

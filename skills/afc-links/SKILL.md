@@ -1,6 +1,7 @@
 ---
 name: afc-links
-description: Build typed evidence-backed relationships between AFC Knowledge Cards and create reusable Concept Cards when repeated context-specific cards share a stable concept. Use as AFC Card Experiment Step 2.
+description: AFC Step 2: build typed, evidence-backed relationships between Knowledge Cards and create reusable Concept Cards when repeated context-specific Cards share one stable concept. Use for 卡片關聯/卡片關係/依賴/影響/concept card/card links. Not for knowledge boundaries and navigation nodes (afc-boxes), and never edits a Card claim or Scope (afc-cards).
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # STEP 2 — Typed Card Links
@@ -115,3 +116,29 @@ legacy `belongs_to`.
 
 Report: link count by type, Link Basis distribution, Concept Cards added, cards
 left with no relationship, and any conflict pairs preserved.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-links` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `allocate_ids.py`
+- `record_decision.py`
+- `validate_links.py`
+- `validate_schema.py`
+
+Not this skill's job:
+
+- editing a Card's claim, Scope or Evidence → `afc-cards`
+- creating Boxes or memberships → `afc-boxes`
+
+`./afc --scope afc-links` prints this boundary.
+<!-- afc:scope:end -->

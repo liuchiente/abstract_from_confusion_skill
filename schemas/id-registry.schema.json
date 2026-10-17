@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC ID Registry Row",
+  "description": "One JSONL row per allocated identity. Maintained by afc_card_runtime.ids via scripts/allocate_ids.py. Numbers are never reused, so a retired identity keeps its ID out of circulation.",
+  "type": "object",
+  "required": ["prefix", "id", "identity"],
+  "properties": {
+    "prefix": {"enum": ["CARD", "EVD"]},
+    "id": {"type": "string", "pattern": "^(CARD|EVD)-[0-9]{6}$"},
+    "identity": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "first_run": {"type": ["string", "null"]},
+    "last_run": {"type": ["string", "null"]},
+    "note": {"type": ["string", "null"]},
+    "identity_history": {
+      "type": "array",
+      "description": "Previous identities this ID was bound to, recorded when a reworded claim rebinds its ID.",
+      "items": {"type": "object", "properties": {"identity": {"type": "string"}, "run": {"type": ["string", "null"]}}}
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,6 +1,7 @@
 ---
 name: afc-validate
-description: Read-only AFC quality and regression validation across package self-test, source structure, Context, Cards, Evidence, Links, Boxes, Query and knowledge lifecycle. Use to evaluate package correctness, Card convergence health, Gold Dataset regression, or whether a new AFC version is safe to adopt.
+description: Read-only quality and regression check across package self-test, source structure, Context, Cards, Evidence, Links, Boxes, Query and knowledge lifecycle. Use for 檢查品質/驗證/回歸測試/能不能升版/health check/is this version safe to adopt. Reports what it finds and never repairs anything: a fix belongs to the step that owns it, and a measured rate to afc-cards.
+allowed-tools: Bash, Read, Glob, Grep
 ---
 
 # AFC Validation — cross-cutting quality gate
@@ -174,7 +175,7 @@ unrelated knowledge stayed stable.
 Each case should be traceable to a change record and, where it was accepted
 deliberately, to the decision artifact that accepted it.
 
-For a persistent v0.6 Knowledge Base, also run the read-only release check:
+For a persistent Knowledge Base, also run the read-only release check:
 
 ```bash
 ./afc knowledge_base.py validate --kb-root path/to/knowledge-base
@@ -211,3 +212,42 @@ State the self-test result, the schema result, and whether the Card stage
 recommendation is: proceed to Links, targeted Card loop, full Card rerun, return
 to Context, evidence repair, or explore unresolved knowledge — and whether a
 current human decision exists for it.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **read-only** changes. Set
+`AFC_SKILL=afc-validate` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `audit_source_structure.py`
+- `check_environment.py`
+- `check_pipeline_artifacts.py`
+- `knowledge_base.py` — only `validate, query`
+- `query_compare.py`
+- `query_fast.py`
+- `record_decision.py` — only `verify`
+- `run_query_benchmark.py`
+- `selftest.py`
+- `validate_boxes.py`
+- `validate_cards.py`
+- `validate_context_selection.py`
+- `validate_coverage.py`
+- `validate_evidence.py`
+- `validate_links.py`
+- `validate_schema.py`
+
+Not this skill's job:
+
+- repairing anything it finds → the owning step's skill
+- rebuilding an index to make a retrieval comparison pass → `afc-query`
+- grading a metric from a sample it drew itself → `afc-cards`
+
+`./afc --scope afc-validate` prints this boundary.
+<!-- afc:scope:end -->

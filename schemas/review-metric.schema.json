@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Review Metric Report",
+  "description": "Produced by scripts/compute_review_metrics.py and consumed by evaluate_card_health.py. sample_integrity and sample_count are what allow a rate to be graded at all.",
+  "type": "object",
+  "required": ["metric_schema_version", "purpose", "sample_source", "sample_integrity", "sample_count", "status"],
+  "properties": {
+    "metric_schema_version": {"type": "string"},
+    "purpose": {"enum": ["saturation", "fidelity", "atomicity"]},
+    "run_id": {"type": ["string", "null"]},
+    "seed": {"type": ["integer", "null"]},
+    "sample_source": {"type": "string"},
+    "sample_integrity": {"enum": ["VERIFIED", "UNVERIFIED"]},
+    "population": {"type": ["integer", "null"], "minimum": 0},
+    "sample_count": {"type": "integer", "minimum": 0},
+    "drawn_sample_count": {"type": ["integer", "null"], "minimum": 0},
+    "verdict_counts": {"type": "object"},
+    "saturation_miss_rate": {"type": ["number", "null"], "minimum": 0},
+    "unsupported_claim_rate": {"type": ["number", "null"], "minimum": 0},
+    "atomicity_issue_rate": {"type": ["number", "null"], "minimum": 0},
+    "altered_literal_count": {"type": "integer", "minimum": 0},
+    "dropped_structured_fact_count": {"type": "integer", "minimum": 0},
+    "findings": {"type": "array", "items": {"type": "object"}},
+    "errors": {"type": "array", "items": {"type": "string"}},
+    "status": {"enum": ["PASS", "FAIL"]}
+  },
+  "additionalProperties": true
+}

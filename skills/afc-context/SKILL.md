@@ -1,6 +1,7 @@
 ---
 name: afc-context
-description: Build structural source contexts, resolve Business Context to active scopes, and select source units on two axes - scope/context applicability plus Semantic/Literal/Structured knowledge signals. Prevents source-native messages, labels, component types, codes, values and localized strings from being dropped before Evidence/Card extraction. Use as AFC Step 0.
+description: AFC Step 0: parse the source package, verify its structure entered AFC, resolve Business Context to active Scopes, and select source units on two axes (scope applicability plus Semantic/Literal/Structured knowledge signals) so source-native messages, labels, codes, values and localized strings survive. Use for 解析來源/來源結構/掃描範圍/適用範圍/這個資料夾裡哪些檔案算在範圍內/Scope/parse sources, or when asked which files and source units are in scope. Not for writing Evidence Records or Cards — that is afc-cards.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # STEP 0 — Source structure, Business Context, Scope, knowledge signals
@@ -54,45 +55,24 @@ Order of reasoning:
 
 Business Context may guide selection. It never rewrites a source fact.
 
-## Scope policy and source boundaries (v0.8)
+## Scope and the source boundary
 
-For a product KB, the source folder is the primary boundary for one product scan. Put
-`afc-scope.md` in each product directory and use canonical Scope IDs under
-`預設 Scope` and `排除 Scope`. The nearest file applies; a child file replaces
-the parent defaults and exclusions. Start from `templates/afc-scope.md` in the
-runtime. `無。` is an explicit empty section.
+The selected source folders are the hard scan boundary, and product Scope comes
+from the explicit run target, the nearest directory's `afc-scope.md`, or the
+approved Business Context mapping — never from a knowledge signal, a Box, or a
+guess that makes a file eligible. A general or reference KB may declare
+`scope_policy: not-applicable`, which removes the product-Scope filter and
+nothing else.
 
-`context.xml` is a mapping only: it maps company-approved Business Context
-names/aliases to declared Scope IDs. The existing YAML mapping is also
-supported. Neither mapping file selects source directories or defines
-exclusions. For a run, use the Scope the user explicitly named; otherwise map a
-requested Business Context and intersect it with the directory default; if no
-Business Context was named, use the directory default. Apply exclusions after
-that resolution. Only an explicit run option
-`--override-excluded-scope <ScopeID>` overrides an exclusion.
+`references/scope-policy.md` has the rules: resolving the KB and its registered
+roots, overlapping roots and memberships, excluded Scopes and how a run may
+override one, what to do with a parsed path outside every root, and what each
+`scope_policy` does and does not relax. Read it before the first parse.
 
-Always pass the selected source root as `--scope-root` and the prompt's explicit
-target as `--target-scope`. Repeat `--scope-root` for overlapping roots so Step 0
-records each membership. If a parsed source path is outside all supplied roots,
-do not widen the roots to make it eligible; correct the source selection.
-
-A general/reference KB may explicitly use `scope_policy: not-applicable` in the
-workspace catalog when product Scope does not apply. This removes only the
-product-Scope filter; the registered and selected source folders still define
-the scan boundary. Do not infer this policy for a product KB. Use the
-`afc-workspace` skill to resolve the KB ID and policy before inventory.
-
-When multiple file types are registered, use `parse_sources.py` with the KB ID
-and the inventory's eligible source list. It dispatches Word, Excel, PDF, text,
-and code files to their adapters. Include every applicable structure report in
-the audit. Python code uses the standard-library AST. Java, Dart/Flutter,
-JavaScript/TypeScript (including Ionic Angular/React/Vue source), PHP, HTML templates, Vue SFC,
-and CSS/SCSS use local Tree-sitter parsing when the optional code runtime is
-installed; other languages remain unsupported. A module unit can overlap with
-class/function units. Treat module text as file-level context and deduplicate
-Evidence by source file and line span; do not turn the same lines into repeated
-claims. The AFC runtime requires Python 3.10 or newer. For setup, read the installation
-and code parser sections in `OPERATIONS.md`.
+For several registered file types, `parse_sources.py` dispatches Word, Excel,
+PDF, text and code files to their adapters. `references/parsers-and-structure.md`
+lists what each parser reads, which code languages need the optional runtime,
+and how to include every structure report in the audit.
 
 ## 1. Source Structure Ingestion Gate
 
@@ -111,6 +91,32 @@ Verify the source actually entered AFC before deciding what is in scope.
   --structure-report work/step-card-0-pdf-structure-report.json
 ```
 
+For an article, manual or study-guide PDF, explicitly select the opt-in layout
+profile. The default `fast` profile remains the legacy extraction path and does
+not pay the layout/image-processing cost:
+
+```bash
+./afc parse_pdf.py input/study-guide.pdf \
+  --profile article --media-dir work/source-media \
+  -o work/step-card-0-pdf-source-units.jsonl \
+  --structure-report work/step-card-0-pdf-structure-report.json
+./afc extract_ocr.py --source-map work/step-card-0-pdf-source-units.jsonl \
+  -o work/step-card-0-visual-extractions.jsonl
+```
+
+The article profile uses pypdf layout text plus conservative numbered-heading
+context. It carries the active heading path across page boundaries and writes
+`section_heading_path`, `section_heading_path_text`, and a stable per-document
+`section_key` on text and extracted image Source Units. These fields identify
+the article topic and chapter context; they are soft extraction boundaries,
+not a requirement that every paragraph become its own Card or that related
+knowledge cannot cross sections. It also emits embedded PDF images as independent image Source Units using
+PyMuPDF or pypdf's Pillow image support. Install `requirements-ocr.txt` for the
+supported optional image dependencies. It
+does not replace the original PDF or claim that OCR recovered diagram layout;
+check page/image locations and OCR confidence. For multiple source types,
+`parse_sources.py --pdf-profile article` enables this profile only for PDFs.
+
 Each parser reports `discovered` counts from a **separate pass over the package**
 and `extracted` counts from what it actually emitted, plus the structures it
 cannot read at all. Three outcomes matter:
@@ -126,14 +132,22 @@ cannot read at all. Three outcomes matter:
 - image Source Units pending visual extraction (below).
 
 Then audit, naming the parsers you expected to run so a silently missing report
-becomes a gap rather than a pass:
+becomes a gap rather than a pass. `--source-map` is repeatable: pass every
+parser output. There is no merged source map at this point —
+`build_context_candidates.py` writes that in section 4 — and a named map that
+does not exist is reported as a gap rather than as an empty audit, so name the
+files the parsers actually wrote. After OCR merges image text back in (below),
+rerun this audit with each map replaced by its `-enriched` counterpart.
 
 ```bash
 ./afc audit_source_structure.py \
-  --source-map work/step-card-0-source-units.jsonl \
+  --source-map work/step-card-0-word-source-units.jsonl \
+  --source-map work/step-card-0-excel-source-units.jsonl \
+  --source-map work/step-card-0-pdf-source-units.jsonl \
   --structure-report work/step-card-0-word-structure-report.json \
   --structure-report work/step-card-0-excel-structure-report.json \
-  --expect-parsers parse_word.py,parse_excel.py \
+  --structure-report work/step-card-0-pdf-structure-report.json \
+  --expect-parsers parse_word.py,parse_excel.py,parse_pdf.py \
   --json-output work/step-card-0-source-structure-audit.json
 ```
 
@@ -141,59 +155,33 @@ Routes: `SOURCE_PARSING_GAP` (blocking), `SOURCE_UNSUPPORTED_STRUCTURE` (review)
 `SOURCE_VISUAL_EXTRACTION_GAP` (review), `CONTINUE_TO_CONTEXT`. These are
 ingestion conditions — never report them as Card or Query failures.
 
-### Images and scanned PDF pages (OCR-first)
+### Images and scanned PDF pages
 
 An image whose `image_text_status` is `PENDING_VISUAL_EXTRACTION` or
-`ALT_TEXT_ONLY` is not text-complete. Alt text is not the image's visible text.
-
-Run the configured local OCR path before model extraction. Tesseract and the
-configured language packs must be installed; scanned-PDF rendering also needs
-the optional dependency in `requirements-ocr.txt`.
-
-```bash
-./afc extract_ocr.py \
-  --source-map work/step-card-0-source-map.jsonl \
-  -o work/step-card-0-visual-extractions.jsonl
-```
-
-The output records OCR text, line regions, language, confidence, and extractor
-version. Preserve visible strings separately; do not translate or repair wording
-during recognition. Apply results using the configured minimum confidence:
-
-```json
-{"source_unit_id":"spec.docx::B000012::IMG01","original_text":"Tải lên thất bại\nSửa đơn và gửi lại","source_language":"vie","extraction_method":"OCR","confidence":0.95,"items":[{"kind":"Message","text":"Tải lên thất bại","region":[12,20,220,48]},{"kind":"ButtonText","text":"Sửa đơn và gửi lại","region":[30,80,240,110]}]}
-```
-
-Keep distinct visible strings distinct; do not merge them into a sentence, and do
-not translate during extraction. OCR runs locally and does not send source media
-to a multimodal model. Keep low-confidence output in Review.
-
-```bash
-./afc apply_visual_extractions.py \
-  --source-map work/step-card-0-source-map.jsonl \
-  --visual-jsonl work/step-card-0-visual-extractions.jsonl \
-  --min-confidence 0.75 \
-  -o work/step-card-0-source-map-enriched.jsonl
-```
-
-Both commands default to the language and confidence threshold in
-`config/settings.yaml` (`ocr.language` and `ocr.min_confidence`). Rerun the
-Source Structure Audit using the enriched map so successfully recognized pages
-are no longer reported as pending; low-confidence and failed units remain in
-the audit for review.
-
-If OCR is unavailable, fails, or does not meet the confidence threshold, retain
-the Source Unit and route `SOURCE_VISUAL_EXTRACTION_GAP`. It does not count as
-complete Literal Coverage. Do not switch to multimodal reading automatically. A
-vision fallback requires explicit user authorization for that run and must record
-`extraction_method = VISION` and the reason.
+`ALT_TEXT_ONLY` is not text-complete, and alt text is not the image's visible
+text. Run the configured local OCR path before model extraction, merge the
+result back into the parser's map, and rerun the audit with the enriched map:
+the commands, the confidence handling and the vision-fallback rule are in
+`references/ocr-and-image-text.md`. If OCR is unavailable or below the
+configured threshold, keep the unit and route `SOURCE_VISUAL_EXTRACTION_GAP`;
+that is not complete Literal Coverage.
 
 ## 2. Structural pass — source-complete, scope-independent
 
 Parse the whole allowed source boundary in source order and build Context
 Boundaries from: document/filename, sheet, heading hierarchy, section, use case,
-table/table region, and paragraph/note where structurally meaningful. A
-structural Context may exist before Scope is known.
+table/table region, and paragraph/note where structurally meaningful. For
+articles, manuals and study guides, carry the nearest title/chapter/section path
+onto every descendant paragraph, list item, table and image, including across
+page breaks. A structural Context may exist before Scope is known.
+
+Treat the document title and chapter/section topic as the first-pass extraction
+groups. Preserve paragraph/list/table/image Source Units as evidence locations
+inside those groups. A section may yield several Cards, and a reusable claim
+may cite evidence from more than one section. Do not let a page break reset the
+active section. When headings cannot be recognized reliably, keep the units and
+use the nearest known heading plus page/block location; do not infer a new
+section from an arbitrary paragraph.
 
 ## 3. Source scope detection
 
@@ -230,50 +218,29 @@ Evaluate applicability and knowledge value independently:
 - **Axis B — knowledge value**: the unit contains or inherits a Semantic,
   Literal, Structured or Structural signal.
 
-`Active boundary AND meaningful knowledge signal -> Selected Source Unit`.
-A knowledge signal never widens Scope by itself.
+`Active boundary` decides which source units are in scope. Knowledge-signal
+matches are discovery hints and audit metadata; they do not define all useful
+knowledge and must not be used as the Card-stage extraction filter. A knowledge
+signal never widens Scope by itself.
 
 ```bash
 ./afc build_context_candidates.py \
-  work/step-card-0-word-source-units-enriched.jsonl work/step-card-0-excel-source-units.jsonl \
+  work/step-card-0-word-source-units-enriched.jsonl \
+  work/step-card-0-excel-source-units.jsonl \
+  work/step-card-0-pdf-source-units-enriched.jsonl \
   --target-scope CA --scope-root input/cproduct \
   --business-context 車險 --context-map config/business-contexts.yaml \
   -o work/step-card-0-source-map.jsonl \
   --report work/step-card-0-context-report.json
 ```
 
-### How signals are matched, and why
-
-Patterns live in `config/knowledge-signals.yaml`, split in two:
-
-- `header_terms` identify a **column header or section label**. A header match
-  preserves the rows that header governs. Generic vocabulary belongs here:
-  `Error Message` as a column title is strong evidence.
-- `content_terms` match **row content** and select that single unit. This list is
-  deliberately narrow and value-shaped (code patterns like `E102`, length
-  constraints), because a sentence that merely mentions "error" or "code" is not
-  literal evidence.
-
-This is the mechanism behind the rule that generic words must not select a unit.
-A row holding an actual Vietnamese error string rarely contains the words "error
-message"; it is preserved because its column header does. Add your source
-languages to that file rather than relying on the defaults.
-
-Signal kinds worth preserving:
-
-- **Literal Knowledge** — exact error/validation messages, UI text, button text,
-  labels, placeholders, return messages, source-native names, localized strings.
-- **Structured Fact** — component type, required flag, min/max length, format,
-  codes, enum/option values, default/original values, function codes, field and
-  parameter names.
-- **Semantic Knowledge** — rules, conditions, processes, definitions,
-  exceptions, mappings.
-- **Structural Context** — headings, section and table headers needed to
-  interpret children. These are context for their children, not claims of their
-  own, so they do not themselves trigger signal recovery.
-
-Preserve literal and structured text exactly as found. Translation and
-normalization are Step 1's business, and even there only on the Card side.
+`config/knowledge-signals.yaml` splits patterns into `header_terms`, which mark
+a column header or section label and so preserve the rows it governs, and
+`content_terms`, which select a single unit on a value-shaped match. That split
+is the mechanism behind the rule that generic vocabulary must never select a
+content row on its own. `references/knowledge-signals.md` explains the matching
+and lists the signal kinds worth preserving; add your source languages to the
+config file rather than relying on the defaults.
 
 ## 5. Context inheritance
 
@@ -335,12 +302,18 @@ Date.
 ```
 
 ```text
+work/step-card-0-<parser>-source-units.jsonl          one per parser that ran
+work/step-card-0-visual-extractions.jsonl             when images needed OCR
+work/step-card-0-<parser>-source-units-enriched.jsonl OCR merged back in
 work/step-card-0-source-structure-audit.json
 work/step-card-0-contexts.jsonl
 work/step-card-0-source-map.jsonl          selected AND unselected
 work/step-card-0-context-report.json
 work/step-card-0-context-selection-audit.json
 ```
+
+`step-card-0-source-map.jsonl` is the merged map and only exists after section
+4. Steps before it name the per-parser maps.
 
 ```bash
 ./afc validate_schema.py work/step-card-0-contexts.jsonl work/step-card-0-source-structure-audit.json
@@ -381,3 +354,41 @@ Context Recall is not 100% merely because every selected unit has a Context.
 - Preserve conflicts rather than resolving them silently.
 - Preserve original source text; translation is not a Step 0 activity.
 - Do not extract Cards here.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-context` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `apply_visual_extractions.py`
+- `audit_source_structure.py`
+- `build_context_candidates.py`
+- `check_environment.py`
+- `extract_ocr.py`
+- `parse_code.py`
+- `parse_excel.py`
+- `parse_pdf.py`
+- `parse_sources.py`
+- `parse_text.py`
+- `parse_word.py`
+- `prepare_code_parser.py`
+- `resolve_business_context.py`
+- `validate_context_selection.py`
+- `validate_schema.py`
+
+Not this skill's job:
+
+- writing Evidence Records or Knowledge Cards → `afc-cards`
+- allocating Card or Evidence IDs → `afc-cards`
+- widening Scope to make a source eligible → the user
+
+`./afc --scope afc-context` prints this boundary.
+<!-- afc:scope:end -->

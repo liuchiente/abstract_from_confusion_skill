@@ -1,6 +1,7 @@
 ---
 name: afc-pipeline
-description: Orchestrate the seven AFC Knowledge Core steps end-to-end without redefining them - Context, Cards/Evidence, Links, Boxes, Curate, Publish, Query Readiness. Use when the user wants one instruction to run the full AFC pipeline.
+description: Run the whole AFC pipeline end to end on a source folder — Steps 0 to 6, in order, through each step's own skill — with the gates, the Step 1 health decision and the final report. Use for 跑完整流程/全流程萃取/整個流程重跑一次/把這批文件建成知識庫/run the full pipeline/end-to-end. For one step, use that step's skill; for a question about existing knowledge, afc-query.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # AFC PIPELINE — orchestrate Steps 0 through 6
@@ -40,7 +41,7 @@ optional final smoke-test query or query-case file. Do not ask for confirmation
 for anything already present in the configuration. With no query supplied, Step 6
 reports Query Readiness and does not invent a business question.
 
-For v0.8 workspace runs, first use `afc-workspace` to resolve the KB ID, its
+For a workspace run, first use `afc-workspace` to resolve the KB ID, its
 registered source roots, `scope_policy`, persistent KB root, and run ID. Inventory
 through `workspace.py inventory` and parse only files listed in that run's
 `candidate/eligible-source-paths.json` with `parse_sources.py --kb-id <id>`.
@@ -57,16 +58,18 @@ selected source folders remain the hard scan boundary. Pass
 comprehensive first extraction, `--select-all-source-units` is allowed only for
 this explicitly bounded neutral KB; focused updates should use topic anchors.
 
-For v0.7, use the current release's `knowledge_domains.jsonl` as the domain
-registry baseline. Copy it into `output/knowledge_domains.jsonl` before staging;
+Use the current release's `knowledge_domains.jsonl` as the domain registry
+baseline. Copy it into `output/knowledge_domains.jsonl` before staging;
 for a first release, create an empty JSONL file. Existing Cards keep their
 approved `Semantic Domain Keys`. New domain keys are candidates until
 `afc-domains` and the release review approve them.
 
 ## Run policy
 
-One uninterrupted run, not seven confirmations. Do not stop between normal steps
-to ask approval — but do not hide quality findings either: record Review items,
+One uninterrupted run, not seven confirmations. A large source makes Step 1's
+hand-written output too big for one pass; `afc-cards` plans and merges
+extraction batches for that, and batching is a context budget, not a
+confirmation point. Do not stop between normal steps to ask approval — but do not hide quality findings either: record Review items,
 carry Card Health and Context Health recommendations forward unchanged, preserve
 Knowledge Gaps, and never mutate a source fact to make a gate pass.
 
@@ -83,15 +86,18 @@ Knowledge Gaps, and never mutate a source fact to make a gate pass.
 ### The Step 1 → Step 2 decision gate
 
 This gate pauses a full run when Card Health is not `READY` and no current human
-decision allows continuation. A separate release-review gate applies after
-candidate datasets are staged.
+decision allows diagnostic continuation. That decision permits later analysis
+and review steps only; it does not accept Card quality or authorize a release.
+A separate release-quality gate applies after candidate datasets are staged.
 
 ```bash
 ./afc record_decision.py verify \
   --health work/step-card-1-health.json --decision work/step-card-1-decision.json
 ```
 
-- `OK` — health is `READY`, or a current decision authorises continuing. Proceed.
+- `OK` — health is `READY`, or a current decision authorises continuing to
+  diagnostic/review steps. Record the health status and decision accurately.
+  Never relabel a non-`READY` run as quality-approved.
 - `MISSING` — health is not `READY` and nobody has chosen a route. Stop with
   `PIPELINE BLOCKED_PENDING_DECISION`, show the health summary and the
   recommended route, and tell the user the exact `record_decision.py record`
@@ -105,13 +111,16 @@ When the user has explicitly asked for an unattended run, they can set
 `decision.required_when_not_ready: false` in `settings.yaml`. Say so in the
 report when that is why the gate did not apply; do not disable it yourself.
 
-### Review conditions — these do not pause the run
+### Review conditions — diagnostic continuation only
 
 Context signal candidates left for Review; `SOURCE_UNSUPPORTED_STRUCTURE`;
 `SOURCE_VISUAL_EXTRACTION_GAP`; Card Health `REVIEW_RECOMMENDED` once a decision
 authorises continuing; unresolved knowledge preserved as Review; orphan
-Cards/Boxes; a Knowledge Gap Candidate from Query. Continue while downstream
-artifacts stay structurally valid, and surface every one of them in the report.
+Cards/Boxes; a Knowledge Gap Candidate from Query. A current continuation
+decision allows diagnostic downstream artifacts to be generated while keeping
+these findings visible. Do not describe them as quality-approved; the persistent
+publish gate blocks non-READY Card health unless the reviewer separately accepts
+the measured quality risk.
 
 `SOURCE_VISUAL_EXTRACTION_GAP` becomes a hard stop only when the missing image
 text is required for the requested final query or a critical Gold case.
@@ -130,7 +139,7 @@ Each step's own skill defines its work. Orchestration checks only these:
 | Step | Required before continuing |
 | --- | --- |
 | 0 | structure audit exists, no unexplained `SOURCE_PARSING_GAP`, source map readable, product Scope resolved or neutral policy explicitly selected |
-| 1 | IDs allocated from the registry, coverage accounted (`unaccounted = 0`), review metrics present, health written, decision gate `OK` |
+| 1 | batches merged cleanly when the source was batched, IDs allocated from the registry, coverage accounted (`unaccounted = 0`), review metrics present, health written, decision gate `OK` |
 | 2 | links validate against the current Card set, no dangling endpoints |
 | 3 | Box graph validates, no hierarchy cycle, Card Scope unchanged |
 | 4 | master and evidence written, IDs preserved, change log appended |
@@ -140,16 +149,22 @@ Each step's own skill defines its work. Orchestration checks only these:
 Use reconciled Cards (`work/step-card-1-reconciled-cards.jsonl`) downstream when
 Step 1 produced them.
 
-## Persistent release review (v0.6+)
+## Persistent release review
 
 Step 5 writes the pipeline's candidate datasets. It does not accept them into
 the persistent Knowledge Base. After the pipeline and its QA finish, run
 `knowledge_base.py stage` against the same run ID and review every object in
 `runs/<run-id>/proposals.jsonl`. Record `accept`, `reject`, or `defer` for every
-proposal with a reviewer and rationale. Publish only after those decisions are
-recorded. If the user has not made the proposal decisions, stop with
+proposal with a reviewer and rationale; `knowledge_base.py decide
+--decisions-file` records a reviewed set in one atomic write instead of one
+process per proposal. Publish only after those decisions are recorded. If the user has not made the proposal decisions, stop with
 `AWAITING_KNOWLEDGE_REVIEW`; do not publish or infer acceptance from a request to
-run the pipeline. After publish, run `knowledge_base.py validate` and rebuild
+run the pipeline. Stage must include the current `work/step-card-1-health.json`.
+`knowledge_base.py publish` blocks unless its bound Card health is `READY`.
+For non-READY health, only a separate explicit `--accept-quality-risk-by` and
+`--quality-risk-rationale` acknowledgement can allow publication. A recorded
+`PROCEED_TO_LINKS` decision is not that acknowledgement. The release manifest
+records any quality-risk acceptance. After publish, run `knowledge_base.py validate` and rebuild
 the release index. Query the persistent store only after a release is accepted.
 
 ## Final cross-cutting validation
@@ -209,3 +224,34 @@ one was requested.
 A pipeline can be READY WITH REVIEW ITEMS while PM/SA still owes a targeted
 Context/Card loop. Successful execution is not evidence of complete knowledge
 recall, and the report should not imply otherwise.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-pipeline` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `check_environment.py`
+- `check_pipeline_artifacts.py`
+- `record_decision.py`
+- `selftest.py`
+- `validate_schema.py`
+
+It also runs each step through that step's own skill, so it may use their
+commands while `AFC_SKILL` names the step being followed: `afc-context`, `afc-cards`, `afc-links`, `afc-boxes`, `afc-curate`, `afc-publish`, `afc-query`, `afc-validate`, `afc-workspace`.
+
+Not this skill's job:
+
+- restating or replacing what a step's own skill says → the step's own skill
+- publishing into the persistent Knowledge Base → `afc-update`
+- deciding the route when the Step 1 gate is owed → the user
+
+`./afc --scope afc-pipeline` prints this boundary.
+<!-- afc:scope:end -->

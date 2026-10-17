@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Query Benchmark Result",
+  "description": "Produced by scripts/run_query_benchmark.py. A regression against the baseline fails the benchmark.",
+  "type": "object",
+  "required": ["benchmark_schema_version", "total", "passed", "failed", "errored", "results", "status"],
+  "properties": {
+    "benchmark_schema_version": {"type": "string"},
+    "db": {"type": "string"},
+    "cases_file": {"type": "string"},
+    "total": {"type": "integer", "minimum": 0},
+    "passed": {"type": "integer", "minimum": 0},
+    "failed": {"type": "integer", "minimum": 0},
+    "errored": {"type": "integer", "minimum": 0},
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": {"type": "string"},
+          "query": {"type": "string"},
+          "status": {"enum": ["PASS", "FAIL", "ERROR"]},
+          "failures": {"type": "array", "items": {"type": "string"}},
+          "error": {"type": "string"},
+          "observed": {"type": "object"}
+        }
+      }
+    },
+    "baseline_comparison": {
+      "type": "object",
+      "properties": {
+        "baseline": {"type": "string"},
+        "regressions": {"type": "array", "items": {"type": "object"}},
+        "fixed": {"type": "array", "items": {"type": "string"}},
+        "new_cases": {"type": "array", "items": {"type": "string"}},
+        "cases_removed_from_baseline": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "status": {"enum": ["PASS", "FAIL"]}
+  },
+  "additionalProperties": true
+}

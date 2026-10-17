@@ -1,0 +1,328 @@
+version: 1
+
+# What each skill is allowed to do, declared rather than hoped for.
+#
+# A skill that quietly does the next step's work is the failure this file
+# prevents: afc-query rebuilding an index, afc-discuss publishing a release,
+# afc-validate "fixing" what it was asked to inspect. Prose asking a model not
+# to do that is a wish. Here it is a check: when AFC_SKILL names the skill
+# being followed, the `afc` launcher refuses a script outside that skill's
+# scope, and scripts/check_skill_scope.py explains why and who to hand off to.
+#
+# Two things are declared per skill:
+#   scripts   the commands that skill may run
+#   mutation  the strongest change it may cause (see change_classes below)
+#
+# and two are written for people and for the generated skill sections:
+#   out_of_scope  what it must not do, in the words a reader needs
+#   handoff       the skill that owns each of those things instead
+#
+# plus allowed_tools, the tool list the harness is asked to hand the model while
+# that skill is active. It is declared per skill rather than derived from
+# `mutation`, because the two answer different questions: `mutation` is about
+# knowledge changes (afc-discuss changes none, yet writes a discussion record),
+# while a tool list is about what the harness allows at all. Treat allowed_tools
+# as a declaration a harness may or may not honour; the checks that actually
+# bind are this file via the `afc` launcher and the store's own refusals.
+#
+# Keep this file and the skills in step: tests fail when a SKILL.md documents a
+# command outside its own scope, when a skill or script is missing an entry, or
+# when a skill's declared boundary is not stated in its SKILL.md.
+
+change_classes:
+  # Ordered weakest to strongest. A skill may run a script of its own class or
+  # weaker, never stronger.
+  - read-only   # reads knowledge; writes only reports and diagnostics
+  - work        # writes run-local artifacts under work/ or output/, and may
+                # append to the ID registry, which is append-only by design
+  - release     # changes the persistent Knowledge Base or a release pointer
+
+# Every script's strongest effect. A script whose subcommands differ is keyed by
+# subcommand, with `default` covering the rest.
+scripts:
+  # --- read-only ---
+  audit_source_structure.py: read-only
+  check_skill_scope.py: read-only
+  check_environment.py: read-only
+  check_pipeline_artifacts.py: read-only
+  export_cards.py: read-only
+  plan_extraction_batches.py: read-only
+  query_compare.py: read-only
+  query_fast.py: read-only
+  run_query_benchmark.py: read-only
+  selftest.py: read-only
+  validate_boxes.py: read-only
+  validate_cards.py: read-only
+  validate_context_selection.py: read-only
+  validate_coverage.py: read-only
+  validate_evidence.py: read-only
+  validate_links.py: read-only
+  validate_schema.py: read-only
+  resolve_business_context.py: read-only
+  resolve_boxes.py: read-only
+  sample_units.py: read-only
+  compute_review_metrics.py: read-only
+  evaluate_card_health.py: read-only
+
+  # --- work ---
+  allocate_ids.py: work
+  apply_visual_extractions.py: work
+  build_context_candidates.py: work
+  build_query_index.py: work
+  ensure_query_index.py: work
+  extract_ocr.py: work
+  merge_extraction_batches.py: work
+  parse_code.py: work
+  parse_excel.py: work
+  parse_pdf.py: work
+  parse_sources.py: work
+  parse_text.py: work
+  parse_word.py: work
+  prepare_code_parser.py: work
+  record_changes.py: work
+  # Maintainer tools. They act on this package's own skills rather than on
+  # knowledge, so they belong to no skill's scope and run only as direct
+  # operator commands.
+  sync_skill_metadata.py: work
+  score_skill_triggers.py: work
+
+  # --- mixed, by subcommand ---
+  record_decision.py:
+    verify: read-only
+    record: work
+    default: work
+  knowledge_base.py:
+    query: read-only
+    validate: read-only
+    inventory: work
+    stage: work
+    decide: work
+    index: work
+    init: release
+    publish: release
+    rollback: release
+    migrate-v05: release
+    default: release
+  knowledge_pack.py:
+    export: read-only
+    import: release
+    default: release
+  workspace.py:
+    list: read-only
+    query: read-only
+    export: read-only
+    inventory: work
+    init: work
+    init-kb: release
+    register: release
+    add-source: release
+    remove-source: release
+    default: release
+
+skills:
+  afc-context:
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    mutation: work
+    scripts: [parse_word.py, parse_excel.py, parse_pdf.py, parse_text.py, parse_code.py,
+              parse_sources.py, prepare_code_parser.py, audit_source_structure.py,
+              extract_ocr.py, apply_visual_extractions.py, resolve_business_context.py,
+              build_context_candidates.py, validate_context_selection.py,
+              validate_schema.py, check_environment.py]
+    out_of_scope:
+      - writing Evidence Records or Knowledge Cards
+      - allocating Card or Evidence IDs
+      - widening Scope to make a source eligible
+    handoff:
+      writing Evidence Records or Knowledge Cards: afc-cards
+      allocating Card or Evidence IDs: afc-cards
+      widening Scope to make a source eligible: the user
+
+  afc-cards:
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    mutation: work
+    scripts: [plan_extraction_batches.py, merge_extraction_batches.py, allocate_ids.py,
+              sample_units.py, compute_review_metrics.py, evaluate_card_health.py,
+              record_decision.py, record_changes.py, validate_schema.py,
+              validate_cards.py, validate_evidence.py, validate_coverage.py]
+    out_of_scope:
+      - re-parsing sources or changing Step 0 selection
+      - building Card Links or Boxes
+      - choosing the route when health is not READY
+    handoff:
+      re-parsing sources or changing Step 0 selection: afc-context
+      building Card Links or Boxes: afc-links
+      choosing the route when health is not READY: the user
+
+  afc-links:
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    mutation: work
+    scripts: [allocate_ids.py, record_decision.py, validate_links.py, validate_schema.py]
+    out_of_scope:
+      - editing a Card's claim, Scope or Evidence
+      - creating Boxes or memberships
+    handoff:
+      editing a Card's claim, Scope or Evidence: afc-cards
+      creating Boxes or memberships: afc-boxes
+
+  afc-boxes:
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    mutation: work
+    scripts: [resolve_boxes.py, validate_boxes.py, validate_schema.py]
+    out_of_scope:
+      - changing a Card's Scope or Product Context
+      - creating or retyping Card Links
+    handoff:
+      changing a Card's Scope or Product Context: afc-cards
+      creating or retyping Card Links: afc-links
+
+  afc-curate:
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    mutation: work
+    scripts: [allocate_ids.py, record_changes.py, validate_schema.py, validate_cards.py,
+              validate_evidence.py, validate_links.py, validate_boxes.py]
+    out_of_scope:
+      - renumbering an ID or rewriting an Evidence Record
+      - publishing into the persistent Knowledge Base
+    handoff:
+      renumbering an ID or rewriting an Evidence Record: afc-cards
+      publishing into the persistent Knowledge Base: afc-publish
+
+  afc-publish:
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    mutation: work
+    scripts: [export_cards.py, check_pipeline_artifacts.py, validate_schema.py,
+              validate_cards.py, validate_evidence.py, validate_links.py,
+              validate_boxes.py, validate_coverage.py, knowledge_base.py]
+    subcommands:
+      knowledge_base.py: [stage, validate, index]
+    out_of_scope:
+      - accepting proposals or publishing a release
+      - changing a Card, Link or Box to make validation pass
+    handoff:
+      accepting proposals or publishing a release: afc-update
+      changing a Card, Link or Box to make validation pass: afc-curate
+
+  afc-query:
+    allowed_tools: [Bash, Read, Glob, Grep]
+    mutation: work
+    scripts: [query_fast.py, query_compare.py, ensure_query_index.py, resolve_boxes.py,
+              knowledge_base.py, workspace.py]
+    subcommands:
+      knowledge_base.py: [query, index]
+      workspace.py: [query, list]
+    out_of_scope:
+      - rescanning sources because an answer was not found
+      - creating or editing a Card to fill a gap
+      - answering from an unreviewed run candidate
+    handoff:
+      rescanning sources because an answer was not found: afc-discuss
+      creating or editing a Card to fill a gap: afc-discuss
+      answering from an unreviewed run candidate: afc-publish
+
+  afc-discuss:
+    allowed_tools: [Bash, Read, Write, Glob, Grep]
+    mutation: read-only
+    scripts: [query_fast.py, knowledge_base.py, workspace.py, validate_schema.py]
+    subcommands:
+      knowledge_base.py: [query, validate]
+      workspace.py: [query, list]
+    out_of_scope:
+      - staging proposals, deciding them or publishing
+      - editing release JSONL
+      - choosing between conflicting source facts without the user
+    handoff:
+      staging proposals, deciding them or publishing: afc-update
+      editing release JSONL: afc-update
+      choosing between conflicting source facts without the user: the user
+
+  afc-update:
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    mutation: release
+    scripts: [knowledge_base.py, validate_schema.py, run_query_benchmark.py, query_fast.py]
+    out_of_scope:
+      - inventing a fact the source Evidence does not support
+      - inferring a proposal decision from silence
+      - re-running source extraction
+    handoff:
+      inventing a fact the source Evidence does not support: afc-discuss
+      inferring a proposal decision from silence: the user
+      re-running source extraction: afc-pipeline
+
+  afc-domains:
+    allowed_tools: [Bash, Read, Write, Glob, Grep]
+    mutation: work
+    scripts: [knowledge_base.py, workspace.py, validate_schema.py]
+    subcommands:
+      knowledge_base.py: [query, validate]
+      workspace.py: [query, list]
+    out_of_scope:
+      - assigning a candidate domain key to an accepted Card
+      - publishing the domain registry
+      - using a domain tag to widen Scope or cross a KB boundary
+    handoff:
+      assigning a candidate domain key to an accepted Card: the user
+      publishing the domain registry: afc-update
+      using a domain tag to widen Scope or cross a KB boundary: the user
+
+  afc-workspace:
+    allowed_tools: [Bash, Read, Write, Glob, Grep]
+    mutation: release
+    scripts: [workspace.py, knowledge_base.py, check_environment.py]
+    out_of_scope:
+      - extracting knowledge from the folders it routes
+      - publishing a release in a KB it selected
+    handoff:
+      extracting knowledge from the folders it routes: afc-pipeline
+      publishing a release in a KB it selected: afc-update
+
+  afc-share:
+    allowed_tools: [Bash, Read, Write, Glob, Grep]
+    mutation: release
+    scripts: [knowledge_pack.py, knowledge_base.py, workspace.py]
+    out_of_scope:
+      - editing knowledge on either side of the transfer
+      - packing a release that does not validate
+    handoff:
+      editing knowledge on either side of the transfer: afc-update
+      packing a release that does not validate: afc-publish
+
+  afc-validate:
+    allowed_tools: [Bash, Read, Glob, Grep]
+    mutation: read-only
+    scripts: [selftest.py, check_environment.py, check_pipeline_artifacts.py,
+              validate_schema.py, validate_cards.py, validate_evidence.py,
+              validate_links.py, validate_boxes.py, validate_coverage.py,
+              validate_context_selection.py, audit_source_structure.py,
+              run_query_benchmark.py, query_fast.py, query_compare.py,
+              record_decision.py, knowledge_base.py]
+    subcommands:
+      knowledge_base.py: [validate, query]
+      record_decision.py: [verify]
+    out_of_scope:
+      - repairing anything it finds
+      - rebuilding an index to make a retrieval comparison pass
+      - grading a metric from a sample it drew itself
+    handoff:
+      repairing anything it finds: the owning step's skill
+      rebuilding an index to make a retrieval comparison pass: afc-query
+      grading a metric from a sample it drew itself: afc-cards
+
+  afc-pipeline:
+    allowed_tools: [Bash, Read, Write, Edit, Glob, Grep]
+    mutation: work
+    scripts: [selftest.py, check_pipeline_artifacts.py, validate_schema.py,
+              record_decision.py, check_environment.py]
+    # The orchestrator runs each step through that step's own skill, so it
+    # borrows their scopes rather than holding a superset of its own. Set
+    # AFC_SKILL to the step being followed; this list is only what the
+    # orchestration itself runs.
+    delegates: [afc-context, afc-cards, afc-links, afc-boxes, afc-curate,
+                afc-publish, afc-query, afc-validate, afc-workspace]
+    out_of_scope:
+      - restating or replacing what a step's own skill says
+      - publishing into the persistent Knowledge Base
+      - deciding the route when the Step 1 gate is owed
+    handoff:
+      restating or replacing what a step's own skill says: the step's own skill
+      publishing into the persistent Knowledge Base: afc-update
+      deciding the route when the Step 1 gate is owed: the user

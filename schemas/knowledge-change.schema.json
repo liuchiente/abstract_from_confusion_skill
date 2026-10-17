@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Knowledge Change Record",
+  "description": "One JSONL row per observed knowledge change. v0.4.1 asked afc-validate to verify current vs historical values, replacement semantics and change records while the data model had nowhere to store any of them; this is that store.",
+  "type": "object",
+  "required": ["Change ID", "Change Type", "Object Type", "Object ID", "Observed Run"],
+  "properties": {
+    "Change ID": {"type": "string", "pattern": "^CHG-[0-9]{6}$"},
+    "Change Type": {
+      "enum": ["Added", "Updated", "Superseded", "Retired", "Restored",
+               "Evidence Added", "Evidence Changed", "Source Version Update", "Reinterpretation"]
+    },
+    "Object Type": {"enum": ["Card", "Evidence", "Link", "Box", "Box Membership", "Box Link"]},
+    "Object ID": {"type": "string", "minLength": 1},
+    "Observed Run": {"type": "string", "minLength": 1},
+    "Observed At": {"type": "string"},
+    "Previous Value": {"type": ["string", "null"], "description": "Verbatim previous value for Evidence, or previous normalized claim for a Card."},
+    "Current Value": {"type": ["string", "null"]},
+    "Superseded By": {"type": ["string", "null"]},
+    "Source": {"type": "string"},
+    "Source Location": {"type": "string"},
+    "Source Version": {"type": ["string", "null"]},
+    "Source Date": {"type": ["string", "null"]},
+    "Decision Reference": {"type": ["string", "null"], "description": "Path or id of the decision artifact that accepted this change."},
+    "Notes": {"type": "string"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,156 @@
+version: 1
+
+# Which skill should a request reach?
+#
+# A skill is chosen from its description, in whatever words the user types. That
+# choice was never measured: descriptions were rewritten to carry Chinese
+# trigger words and to name the sibling that owns the neighbouring work, on the
+# assumption that it improves selection. An assumption about a model's behaviour
+# is not a measurement, and this package's own rule is that a rate is computed
+# from recorded observations, never self-reported.
+#
+# So: a harness or model records which skill it would load for each request, one
+# row per case, and scripts/score_skill_triggers.py computes the accuracy and
+# the confusion pairs. Write the cases a real user would send, especially the
+# ones that used to be ambiguous, not the ones that are easy to get right.
+#
+#   ./afc score_skill_triggers.py --template work/trigger-observations.jsonl
+#   ./afc score_skill_triggers.py --observed work/trigger-observations.jsonl
+#   ./afc score_skill_triggers.py --lexical        # no model needed
+#
+# `lexical_anchor: false` marks a request made entirely of subject-matter words.
+# A real insurance question shares no vocabulary with any skill description, so
+# it is routed by intent and the lexical pre-check cannot say anything about it.
+# Use it only for that, never to excuse a description that is missing a word.
+#
+# `confusable_with` names the skill a case is most likely to be mis-sent to. The
+# scorer reports those separately: a wrong answer there is a boundary problem,
+# while a wrong answer elsewhere is usually a missing trigger word.
+
+cases:
+  # --- the whole pipeline, and what it is not -----------------------------
+  - id: pipeline-zh-full
+    request: 幫我把 input 底下這批規格文件整批建成知識庫
+    expect: afc-pipeline
+    confusable_with: afc-context
+  - id: pipeline-en-full
+    request: Run the full AFC pipeline end to end on the cproduct source folder
+    expect: afc-pipeline
+  - id: pipeline-zh-rerun
+    request: 來源更新了，整個流程重跑一次
+    expect: afc-pipeline
+
+  # --- Step 0: structure, scope, selection --------------------------------
+  - id: context-zh-parse
+    request: 先解析這份 docx，看看表格和圖片有沒有都進來
+    expect: afc-context
+    confusable_with: afc-cards
+  - id: context-zh-scope
+    request: 這個資料夾裡哪些檔案算在 CA 的範圍內？
+    expect: afc-context
+    confusable_with: afc-query
+  - id: context-en-unsupported
+    request: The audit says SOURCE_UNSUPPORTED_STRUCTURE, what is in scope?
+    expect: afc-context
+
+  # --- Step 1: Evidence and Cards -----------------------------------------
+  - id: cards-zh-extract
+    request: 從選到的來源單元抽出知識卡，原文要保留
+    expect: afc-cards
+    confusable_with: afc-context
+  - id: cards-zh-health
+    request: 這次萃取的健康度如何？飽和度和原子性有沒有過
+    expect: afc-cards
+    confusable_with: afc-validate
+  - id: cards-en-batch
+    request: This spreadsheet is too big to extract in one pass
+    expect: afc-cards
+
+  # --- Steps 2 to 5 --------------------------------------------------------
+  - id: links-zh
+    request: 把這些卡片之間的依賴和影響關係建起來
+    expect: afc-links
+    confusable_with: afc-boxes
+  - id: boxes-zh
+    request: 依情境和畫面把卡片歸到知識邊界裡，建 Box 圖
+    expect: afc-boxes
+    confusable_with: afc-links
+  - id: curate-zh
+    request: 把這一輪的卡片彙整成卡片主檔，保留生命週期狀態
+    expect: afc-curate
+    confusable_with: afc-publish
+  - id: publish-zh
+    request: 產出 JSONL 資料集和給人看的 Excel
+    expect: afc-publish
+    confusable_with: afc-update
+  - id: publish-en-stage
+    request: Stage this run's candidate datasets against the accepted release
+    expect: afc-publish
+    confusable_with: afc-update
+
+  # --- query, and the three things people send to it by mistake -----------
+  - id: query-zh-rule
+    request: CA 保單生效後還能不能加買乘客險？
+    expect: afc-query
+    lexical_anchor: false   # a question about the product, not about AFC
+  - id: query-zh-literal
+    request: 上傳失敗時系統顯示的越南文原始錯誤訊息是什麼？
+    expect: afc-query
+    confusable_with: afc-discuss
+  - id: query-zh-field
+    request: 保單號碼這個欄位的最大長度是多少
+    expect: afc-query
+  - id: query-en-rule
+    request: What are the conditions that block adding passenger cover?
+    expect: afc-query
+
+    lexical_anchor: false   # a question about the product, not about AFC
+  - id: discuss-zh-wrong-answer
+    request: 這個答案跟業務說的不一樣，來源到底怎麼寫的？
+    expect: afc-discuss
+    confusable_with: afc-query
+  - id: discuss-zh-conflict
+    request: 兩份文件對加買期限寫得不一樣，幫我查清楚
+    expect: afc-discuss
+    confusable_with: afc-query
+  - id: discuss-en-stale
+    request: I think this rule is out of date, investigate it against the source
+    expect: afc-discuss
+
+  - id: update-zh-apply
+    request: 上次討論的結論確認了，套用到知識庫並發新版本
+    expect: afc-update
+    confusable_with: afc-discuss
+  - id: update-en-decide
+    request: Record accept or reject for every staged proposal and publish
+    expect: afc-update
+    confusable_with: afc-publish
+
+  # --- maintenance workflows ----------------------------------------------
+  - id: domains-zh
+    request: 幫這個知識庫的子主題取一組可讀的領域鍵
+    expect: afc-domains
+    confusable_with: afc-boxes
+  - id: workspace-zh-route
+    request: 我有三個產品資料夾要分到不同的知識庫，先註冊起來
+    expect: afc-workspace
+    confusable_with: afc-context
+  - id: workspace-zh-switch
+    request: 這次要查的是 cproduct 那個知識庫
+    expect: afc-workspace
+    confusable_with: afc-query
+  - id: share-zh-export
+    request: 把這個知識庫匯出成唯讀快照給另一台電腦用
+    expect: afc-share
+  - id: share-en-import
+    request: Import this release pack and check it validates
+    expect: afc-share
+
+  # --- validation, and the repair it must not do --------------------------
+  - id: validate-zh-health
+    request: 幫我檢查這包 AFC 的品質和回歸，能不能升版
+    expect: afc-validate
+    confusable_with: afc-cards
+  - id: validate-en-readonly
+    request: Run the self-test and the schema checks, do not change anything
+    expect: afc-validate

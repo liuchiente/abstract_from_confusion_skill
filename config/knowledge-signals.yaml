@@ -1,0 +1,215 @@
+version: 1
+
+# Step 0 knowledge signals: recall aids, never business truth.
+#
+# Why this file exists
+# --------------------
+# v0.4.1 hard-coded these patterns in build_context_candidates.py and matched
+# generic words such as `error`, `code`, `format`, `length`, `label` and `失敗`
+# against ROW CONTENT. afc-context's own guardrail says the opposite:
+#
+#   "Never select units merely because they contain generic words such as
+#    message, error, component, or code."
+#
+# The result was that almost every run produced a non-zero
+# `signal_unselected`, so the Step 0 REVIEW flag carried no information and was
+# learned to be ignored. The language list was also hard-coded, so a source in
+# any other language silently produced zero signals and still reported PASS.
+#
+# The split below is the fix:
+#
+#   header_terms  identify a COLUMN HEADER / SECTION LABEL as signal-bearing.
+#                 A header match preserves the rows that header governs. This is
+#                 where generic vocabulary belongs: "Error Message" as a column
+#                 title is strong evidence; "error" inside a sentence is not.
+#
+#   content_terms match ROW CONTENT and select that single unit on their own.
+#                 Keep this list narrow and shaped (value patterns, not topic
+#                 words). Every entry added here trades precision for recall.
+#
+#   semantic_terms match prose content and mark Semantic Knowledge. Prose
+#                 genuinely does announce rules/conditions/processes by name.
+#
+# Patterns are Python regexes matched case-insensitively. Add your source
+# languages here rather than editing the scripts.
+
+header_terms:
+  literal:
+    Error Message:
+      - 'error\s*message'
+      - 'err(?:or)?\s*msg'
+      - '錯誤訊息'
+      - '錯誤信息'
+      - '錯誤消息'
+      - 'thông\s*báo\s*lỗi'
+      - 'thông\s*điệp\s*lỗi'
+    Validation Message:
+      - 'validation\s*message'
+      - '驗證訊息'
+      - '檢核訊息'
+      - '校驗訊息'
+      - 'thông\s*báo.*(?:kiểm\s*tra|xác\s*thực)'
+    Prompt / Warning:
+      - '提示訊息'
+      - '警告訊息'
+      - '\bwarning\b'
+      - '\balert\b'
+      - 'cảnh\s*báo'
+      - 'thông\s*báo'
+    UI Label / Text:
+      - '\blabel\b'
+      - '欄位名稱'
+      - '畫面文字'
+      - '按鈕文字'
+      - 'button\s*text'
+      - 'ui\s*text'
+      - '\bplaceholder\b'
+      - 'nhãn'
+    Return Message:
+      - 'return\s*message'
+      - 'response\s*message'
+      - '回傳訊息'
+      - '返回訊息'
+      - '回應訊息'
+  structured:
+    Component Type:
+      - 'component\s*type'
+      - 'control\s*type'
+      - 'widget\s*type'
+      - '元件類型'
+      - '控件類型'
+      - 'loại\s*(?:component|control|widget|điều\s*khiển)'
+    Required:
+      - '\brequired\b'
+      - '\bmandatory\b'
+      - '必填'
+      - '是否必填'
+      - 'bắt\s*buộc'
+    Length:
+      - 'max\s*length'
+      - 'min\s*length'
+      - '\blength\b'
+      - '最大長度'
+      - '最小長度'
+      - '長度'
+      - 'độ\s*dài'
+    Format:
+      - '\bformat\b'
+      - '格式'
+      - 'định\s*dạng'
+    Code:
+      - 'return\s*code'
+      - 'error\s*code'
+      - 'function\s*code'
+      - '功能代碼'
+      - '錯誤代碼'
+      - '回傳碼'
+      - '\bcode\b'
+      - 'mã\s*(?:lỗi|chức\s*năng)'
+    Options / Enum:
+      - '\benum\b'
+      - 'option\s*values?'
+      - '選項'
+      - '枚舉'
+      - '下拉'
+      - '\bdropdown\b'
+    Value / Default:
+      - 'default\s*value'
+      - '預設值'
+      - '默認值'
+      - '原始值'
+      - 'giá\s*trị\s*mặc\s*định'
+    Field / Name:
+      - 'field\s*name'
+      - '欄位名稱'
+      - '字段名稱'
+      - '參數名稱'
+      - 'parameter\s*name'
+      - 'tên\s*(?:trường|tham\s*số)'
+
+# Narrow, value-shaped patterns only. These select a content row by themselves.
+content_terms:
+  literal: {}
+  structured:
+    Code:
+      # Self-evident code shapes such as E102, ERR-001, FNC_0012.
+      - '(?<![A-Za-z0-9_])(?:E|ERR|RC|MSG|FNC)[-_]?\d{2,5}(?![A-Za-z0-9_])'
+    Length:
+      # "max 100", "長度 100", "độ dài 100" as an actual constraint value.
+      - '(?:max(?:imum)?|min(?:imum)?|最大|最小|độ\s*dài)\s*[:：=]?\s*\d{1,5}\b'
+
+# Prose signals for Semantic Knowledge. These do not preserve literal values;
+# they mark a unit as carrying business meaning worth a Card.
+semantic_terms:
+  Rule:
+    - '規則'
+    - '業務規則'
+    - 'business\s*rule'
+    - 'quy\s*tắc'
+  Condition:
+    - '條件'
+    - '\bcondition\b'
+    - 'điều\s*kiện'
+  Process:
+    - '流程'
+    - '\bprocess\b'
+    - '\bworkflow\b'
+    - 'quy\s*trình'
+  Exception:
+    - '例外'
+    - '異常'
+    - '\bexception\b'
+    - '不得'
+    - '不可'
+    - 'không\s*được'
+    - 'không\s*thể'
+  Definition:
+    - '定義'
+    - '是指'
+    - '\bdefinition\b'
+    - '\bdefined as\b'
+    - '\bmeans?\b'
+  Principle:
+    - '原則'
+    - '原理'
+    - '\bprinciple\b'
+  Method:
+    - '方法'
+    - '技術'
+    - '分析'
+    - '\bmethod\b'
+    - '\btechnique\b'
+    - '\banalysis\b'
+  Artifact:
+    - '工件'
+    - '文件'
+    - '紀錄'
+    - '登錄表'
+    - '\bartifact\b'
+    - '\bregister\b'
+  Comparison:
+    - '比較'
+    - '對比'
+    - '相較'
+    - '\bcompare(?:d|s)?\b'
+    - '\bversus\b'
+  Formula:
+    - '公式'
+    - '計算'
+    - '\bformula\b'
+    - '\bequation\b'
+  Example:
+    - '例如'
+    - '以下圖為例'
+    - '範例'
+    - '\bexample\b'
+  Quantitative:
+    - '矩陣'
+    - '量化'
+    - '分數'
+    - '等級'
+    - '門檻'
+    - '\bmatrix\b'
+    - '\bthreshold\b'
+    - '\bscore\b'
+    - '\bscale\b'

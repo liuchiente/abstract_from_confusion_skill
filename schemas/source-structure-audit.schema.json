@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Source Structure Audit",
+  "type": "object",
+  "required": [
+    "status",
+    "summary",
+    "recommended_routes"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "PASS",
+        "REVIEW",
+        "FAIL"
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "parser_gaps": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "recommended_routes": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "SOURCE_PARSING_GAP",
+          "SOURCE_UNSUPPORTED_STRUCTURE",
+          "SOURCE_VISUAL_EXTRACTION_GAP",
+          "CONTINUE_TO_CONTEXT"
+        ]
+      }
+    },
+    "unsupported_structures": {
+      "type": "array",
+      "description": "Source content that no AFC parser can read at all (header/footer text, footnotes, comments, charts, SmartArt, OLE objects, equations, scanned pages, formula cells without a cached value). v0.4.1 reported PASS for these because discovered == extracted == 0.",
+      "items": {
+        "type": "object",
+        "required": [
+          "structure",
+          "detail",
+          "count"
+        ],
+        "properties": {
+          "parser": {
+            "type": "string"
+          },
+          "source_file": {
+            "type": "string"
+          },
+          "structure": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "missing_parser_reports": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parsers_reporting": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "audit_schema_version": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

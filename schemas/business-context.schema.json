@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version","business_contexts"],
+  "properties": {
+    "version": {"type":["integer","string"]},
+    "business_contexts": {
+      "type":"array",
+      "items": {
+        "type":"object",
+        "required":["context","scopes"],
+        "properties": {
+          "context":{"type":"string","minLength":1},
+          "aliases":{"type":"array","items":{"type":"string"}},
+          "scopes":{"type":"array","minItems":1,"items":{"type":"string"}},
+          "description":{"type":"string"}
+        }
+      }
+    }
+  }
+}

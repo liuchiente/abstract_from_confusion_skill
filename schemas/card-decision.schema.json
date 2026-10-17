@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Card-stage Human Decision",
+  "description": "Produced by scripts/record_decision.py. Bound to the exact health report it was made against: if health changes, the decision goes stale and Step 2 is gated again.",
+  "type": "object",
+  "required": ["decision_schema_version", "decided_by", "decided_at", "health_snapshot_sha256", "chosen_route", "continues_pipeline"],
+  "properties": {
+    "decision_schema_version": {"type": "string"},
+    "decided_by": {"type": "string", "minLength": 1},
+    "decided_at": {"type": "string"},
+    "run_id": {"type": ["string", "null"]},
+    "health_report": {"type": "string"},
+    "health_overall_status": {"type": "string"},
+    "health_primary_loop_route": {"type": ["string", "null"]},
+    "health_snapshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "chosen_route": {
+      "enum": ["PROCEED_TO_LINKS", "TARGETED_CARD_DISCOVERY", "RERUN_CARD_DISCOVERY",
+               "CARD_RECONCILIATION", "TARGETED_ATOMICITY_REVIEW", "EVIDENCE_REPAIR",
+               "CARD_RECOVERY", "RETURN_TO_CONTEXT", "AFC_EXPLORE", "ACCEPT_REVIEW_ITEMS"]
+    },
+    "continues_pipeline": {"type": "boolean"},
+    "rationale": {"type": "string"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,129 @@
+# AFC Card Experiment settings — v0.5.0
+#
+# This file is read. In v0.4.1 no script ever opened it: every threshold here was
+# also hard-coded as an argparse default in evaluate_card_health.py and restated
+# in README.md, AGENTS.md and the SKILL.md files, so five copies drifted apart.
+# Defaults now live once in afc_card_runtime/config.py; this file overrides them
+# and every script takes its defaults from it. Legacy flat keys from v0.4.1
+# (query_top_k, context_neighbor_window, ...) are still accepted and migrated.
+#
+# Vocabulary, kept distinct on purpose:
+#   Business Context  company-approved high-level term, e.g. 車險
+#   Scope             the authoritative product/applicability boundary, e.g. CA
+#   Box               a reusable knowledge/navigation boundary — NOT a Scope
+# The example values below use one coherent vocabulary: Scope codes are CA/CB,
+# 車險 is the Business Context that resolves to them, and the taxonomy's other
+# business Boxes (傷害險, 旅遊險) are simply outside the active Scope.
+
+company_context: ./config/company-context.md
+business_context_map: ./config/business-contexts.yaml
+box_taxonomy: ./config/box-taxonomy.yaml
+knowledge_signals: ./config/knowledge-signals.yaml
+query_terms: ./config/query-terms.yaml
+
+source_paths:
+  - ./input
+source_recursive: true
+work_dir: ./work
+output_dir: ./output
+unknown_value: 未定義
+none_value: 無
+
+# ---------------------------------------------------------------- Step 0
+# Business Contexts assumed when the user names none. Empty means "ask or infer".
+default_business_contexts: []
+# Explicit Scope override. When set, it wins over Business Context resolution.
+active_scopes: []
+# Scope codes that must never enter the active set, even via a Business Context.
+# Use Scope codes here, not product display names.
+excluded_scopes: []
+# Literal source anchors that mark a unit as directly in scope.
+context_anchors:
+  - CA
+context_scope_detection: multi
+# Last-resort structural fallback, used ONLY when no document, sheet, heading,
+# table, contiguous region or page boundary applies. afc-context's rule stands:
+# never use a fixed +/-N window as the primary boundary.
+context_fallback_block_window: 3
+
+source_structure:
+  audit_required: true
+  parse_nested_tables: true
+  extract_text_boxes: true
+  extract_embedded_images: true
+  visual_extraction_when_available: true
+  image_text_pending_is_review: true
+  # Content no parser can read (header/footer text, footnotes, comments, charts,
+  # SmartArt, OLE objects, equations, scanned pages, uncached formula cells) is
+  # reported as SOURCE_UNSUPPORTED_STRUCTURE instead of passing silently.
+  unsupported_structure_is_review: true
+
+context_knowledge_signals:
+  enabled: true
+  recover_within_selected_boundary: true
+  preserve_literal_knowledge: true
+  preserve_structured_facts: true
+  audit_unselected_signal_candidates: true
+  # Generic vocabulary ("error", "code", "length") may identify a column HEADER,
+  # never select a content row on its own. See config/knowledge-signals.yaml.
+  generic_terms_select_headers_only: true
+
+# ---------------------------------------------------------------- Step 1
+coverage:
+  ledger_required: true
+  accounting_required: 1.0
+
+card_health:
+  saturation_green_lt: 0.02
+  saturation_yellow_lte: 0.05
+  novelty_green_lt: 0.02
+  novelty_yellow_lte: 0.05
+  atomicity_green_lt: 0.02
+  atomicity_yellow_lte: 0.05
+  review_green_lt: 0.02
+  review_yellow_lte: 0.05
+  unaccounted_required: 0.0
+  unsupported_required: 0.0
+  # A rate is graded only when the review sample can express the green
+  # threshold. At n=12 the smallest non-zero rate is 0.083, so a 0.02 green
+  # band is meaningless there; such a metric is graded INSUFFICIENT_SAMPLE and
+  # cannot reach READY. Raise this if your green thresholds get tighter.
+  min_sample_for_rate_grading: 30
+
+decision:
+  # When Card health is not READY, Step 2 requires a recorded human decision
+  # whose health snapshot still matches the current health report.
+  # Set false only if you accept an unattended pipeline.
+  required_when_not_ready: true
+
+# ---------------------------------------------------------------- Step 6
+query:
+  mode: auto
+  top_k: 12
+  candidate_k: 40
+  rerank_k: 8
+  link_k: 16
+  evidence_k: 16
+  box_expand_k: 12
+  default_box_hops: 0
+  max_box_hops: 1
+  default_card_hops: 0
+  max_card_hops: 1
+  max_query_terms: 12
+
+# ---------------------------------------------------------------- artifacts
+artifacts:
+  # Baseline AFC v1 output for A/B comparison; optional.
+  field_master_excel: null
+  card_master_jsonl: ./output/knowledge_card_master.jsonl
+  evidence_master_jsonl: ./output/knowledge_evidence.jsonl
+  card_links_jsonl: ./output/knowledge_links.jsonl
+  card_boxes_jsonl: ./output/knowledge_boxes.jsonl
+  card_box_memberships_jsonl: ./output/knowledge_box_memberships.jsonl
+  box_links_jsonl: ./output/knowledge_box_links.jsonl
+  card_contexts_jsonl: ./output/knowledge_contexts.jsonl
+  query_index_db: ./work/query-index/afc-query.db
+  # Content-derived Card/Evidence identities. Deleting this file renumbers the
+  # knowledge base and invalidates every delta and Gold baseline.
+  id_registry: ./work/id-registry.jsonl
+  change_log: ./work/knowledge-change-log.jsonl

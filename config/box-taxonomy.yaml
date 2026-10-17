@@ -1,0 +1,82 @@
+version: 2
+
+# Company-approved seed topology. Boxes are context/navigation nodes, not folders.
+# Cards remain stored once; Card↔Box membership is generated separately.
+boxes:
+  - key: insurance
+    name: 保險
+    type: Business
+    aliases: [保險]
+
+  - key: motor-insurance
+    name: 車險
+    type: Business
+    aliases: [車險]
+    scope_hints: [CA, CB]
+
+  - key: ca
+    name: CA
+    type: Business
+    aliases: [CA]
+    scope_hints: [CA]
+
+  - key: cb
+    name: CB
+    type: Business
+    aliases: [CB]
+    scope_hints: [CB]
+
+  - key: accident-insurance
+    name: 傷害險
+    type: Business
+    aliases: [傷害險]
+
+  - key: travel-insurance
+    name: 旅遊險
+    type: Business
+    aliases: [旅遊險]
+
+  - key: payment
+    name: 繳費
+    type: Function
+    aliases: [繳費, 付款, payment, pay]
+
+  - key: navigation
+    name: Navigation
+    type: Function
+    aliases: [Navigation, 導航, 頁面導航]
+
+  - key: back
+    name: Back
+    type: Function
+    aliases: [Back, 返回, 回上一頁]
+
+# Hierarchy is represented as links, not embedded folder parents.
+relations:
+  - source: insurance
+    relation: parent_of
+    target: motor-insurance
+    basis: Company Taxonomy
+
+  - source: motor-insurance
+    relation: parent_of
+    target: ca
+    basis: Company Taxonomy
+
+  - source: motor-insurance
+    relation: parent_of
+    target: cb
+    basis: Company Taxonomy
+
+  - source: insurance
+    relation: parent_of
+    target: accident-insurance
+    basis: Company Taxonomy
+
+  - source: insurance
+    relation: parent_of
+    target: travel-insurance
+    basis: Company Taxonomy
+
+# Cross-cutting functions such as Payment should not be forced under one business parent.
+# Add uses_function/shared_with edges only when supported by source/company evidence.

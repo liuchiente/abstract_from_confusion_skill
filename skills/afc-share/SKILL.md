@@ -1,6 +1,7 @@
 ---
 name: afc-share
-description: Create, import, validate, and query portable read-only AFC Knowledge Base release packs on another computer.
+description: Create, import, validate and query a portable read-only Knowledge Base release pack on another computer. Use for 匯出知識庫/給別台電腦/交付快照/匯入 release pack/portable snapshot. The pack and the AFC runtime are separate deliverables. This skill never edits knowledge on either side of the transfer: a correction goes through afc-discuss and afc-update.
+allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # AFC Knowledge Base Sharing
@@ -12,7 +13,8 @@ commands; `afc-query` provides the model's retrieval and answer rules.
 
 ## Export a read-only snapshot
 
-Start from a validated accepted release. In a v0.8 workspace, use the KB ID to export the selected Knowledge Base:
+Start from a validated accepted release. With a workspace catalog, name the KB
+ID to export the selected Knowledge Base:
 
 ```bash
 ./afc workspace.py export --kb-id cproduct \
@@ -65,3 +67,28 @@ opening the original source requires separately shared files or a shared source
 location. A read-only pack is a snapshot: send a newly published pack to deliver
 later updates. Recipients should submit proposed corrections through
 `afc-update`, not edit the snapshot in place.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **release** changes. Set
+`AFC_SKILL=afc-share` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `knowledge_base.py`
+- `knowledge_pack.py`
+- `workspace.py`
+
+Not this skill's job:
+
+- editing knowledge on either side of the transfer → `afc-update`
+- packing a release that does not validate → `afc-publish`
+
+`./afc --scope afc-share` prints this boundary.
+<!-- afc:scope:end -->

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Knowledge Scope Attribution",
+  "type": "object",
+  "required": ["Attribution Key", "Card ID", "Scope ID", "Attribution Basis", "Evidence IDs", "Status", "Run ID"],
+  "properties": {
+    "Attribution Key": {"type": "string", "pattern": "^CARD-[0-9]{6}::.+$"},
+    "Card ID": {"type": "string", "pattern": "^CARD-[0-9]{6}$"},
+    "Scope ID": {"type": "string", "minLength": 1},
+    "Attribution Basis": {
+      "enum": ["Direct Evidence", "Structural Context", "Business Context Mapping", "Human Review", "Legacy Card Scope"]
+    },
+    "Evidence IDs": {
+      "type": "array", "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^EVD-[0-9]{6}$"}
+    },
+    "Source Context IDs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "Status": {"enum": ["Confirmed", "Candidate", "Needs Review", "Retired"]},
+    "Run ID": {"type": "string", "minLength": 1},
+    "Source Card Fields": {
+      "type": "array", "uniqueItems": true,
+      "items": {"enum": ["Scope", "Scopes", "Product Context"]}
+    },
+    "Notes": {"type": "string"}
+  },
+  "additionalProperties": false
+}

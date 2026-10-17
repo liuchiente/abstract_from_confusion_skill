@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["Membership ID", "Box ID", "Card ID", "Membership Type", "Membership Basis", "Status"],
+  "properties": {
+    "Membership ID": {"type": "string", "pattern": "^BM-[0-9]{6}$"},
+    "Box ID": {"type": "string", "pattern": "^BOX-[0-9]{6}$"},
+    "Card ID": {"type": "string", "pattern": "^CARD-[0-9]{6}$"},
+    "Membership Type": {"enum": ["belongs_to", "valid_in", "uses_function", "defined_in", "shared_in"]},
+    "Membership Basis": {"enum": ["Direct Source", "Structural Context", "Business Context Mapping", "Function Evidence", "Scenario Evidence", "Screen Evidence", "Inherited Box", "Manual Configuration", "Review"]},
+    "Evidence": {"type": "string"},
+    "Source Context IDs": {"type": "array", "items": {"type": "string"}},
+    "Confidence": {"enum": ["High", "Medium", "Low"]},
+    "Status": {"enum": ["Confirmed", "Candidate", "Needs Review"]},
+    "Notes": {"type": "string"}
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "Source Unit ID",
+    "Disposition"
+  ],
+  "properties": {
+    "Source Unit ID": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Context ID": {
+      "type": "string"
+    },
+    "Disposition": {
+      "enum": [
+        "Card",
+        "Skip",
+        "Review"
+      ],
+      "description": "Card = at least one Card was created; Skip = no knowledge to preserve (Skip Reason required); Review = meaningful but not yet safely interpretable (Review Reason required)."
+    },
+    "Card IDs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^CARD-[0-9]{6}$"
+      }
+    },
+    "Skip Reason": {
+      "type": "string"
+    },
+    "Notes": {
+      "type": "string"
+    },
+    "Review Reason": {
+      "type": "string"
+    },
+    "Evidence Record IDs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EVD-[0-9]{6}$"
+      }
+    }
+  },
+  "title": "AFC Coverage Ledger Row"
+}

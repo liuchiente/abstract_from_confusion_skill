@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Evidence Record",
+  "type": "object",
+  "required": [
+    "Evidence ID",
+    "Evidence Mode",
+    "Source",
+    "Source Location",
+    "Original Text"
+  ],
+  "properties": {
+    "Evidence ID": {
+      "type": "string",
+      "pattern": "^EVD-[0-9]{6}$",
+      "description": "Allocated by scripts/allocate_ids.py from (source location, source unit, evidence kind, verbatim original text, structured facts). Card reinterpretation never moves it."
+    },
+    "Evidence Mode": {
+      "enum": [
+        "VERBATIM",
+        "STRUCTURED",
+        "VERBATIM+STRUCTURED"
+      ]
+    },
+    "Evidence Kind": {
+      "enum": [
+        "Name",
+        "Description",
+        "Message",
+        "ComponentType",
+        "Code",
+        "Value",
+        "Label",
+        "Placeholder",
+        "Option",
+        "RuleText",
+        "SourceUnit",
+        "Other",
+        "ButtonText",
+        "ImageText",
+        "VisualEvidence"
+      ]
+    },
+    "Original Text": {
+      "type": "string"
+    },
+    "Source Language": {
+      "type": "string"
+    },
+    "Original Name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Message": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Component Type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Value": {},
+    "Original Label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Placeholder": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Required": {},
+    "Original Max Length": {},
+    "Original Min Length": {},
+    "Original Format": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Validation Message": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Error Message": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Original Option Values": {
+      "type": [
+        "array",
+        "string",
+        "null"
+      ],
+      "items": {}
+    },
+    "Original Function Code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Structured Facts": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "Card IDs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^CARD-[0-9]{6}$"
+      }
+    },
+    "Context ID": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Source Unit IDs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Source": {
+      "type": "string"
+    },
+    "Source Location": {
+      "type": "string"
+    },
+    "Source Version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Source Date": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Status": {
+      "enum": [
+        "Active",
+        "Superseded",
+        "Retired"
+      ],
+      "description": "Lifecycle state. Written by allocate_ids.py (default Active) and by afc-curate."
+    },
+    "First Seen Run": {
+      "type": "string",
+      "description": "Run id in which this identity first entered the registry."
+    },
+    "Last Seen Run": {
+      "type": "string",
+      "description": "Most recent run id that produced this identity."
+    }
+  },
+  "additionalProperties": true
+}

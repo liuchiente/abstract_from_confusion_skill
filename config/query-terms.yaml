@@ -1,0 +1,216 @@
+version: 1
+
+# Query classification vocabulary.
+#
+# v0.4.1 hard-coded these lists in query_fast.py with plain substring matching
+# and no Vietnamese at all, so a Vietnamese question always classified as
+# `semantic` and never reached the Evidence layer that holds the Vietnamese
+# source strings -- the exact capability the release notes advertised. Latin
+# terms also matched inside other words ("code" fired on "barcode", "encode").
+#
+# Matching rules:
+#   * a term made only of ASCII letters/digits/_/- matches on word boundaries;
+#   * any other term (CJK, Vietnamese with diacritics, phrases) matches as a
+#     case-insensitive substring.
+# Add your source and query languages here rather than editing the script.
+
+intent:
+  box_relationship:
+    - 哪些功能
+    - 使用哪些功能
+    - 用了哪些功能
+    - 哪些情境
+    - 哪些畫面
+    - 相關情境
+    - 關聯情境
+    - box relationship
+    - những chức năng nào
+    - màn hình nào
+  relationship:
+    - 影響
+    - 控制
+    - 依賴
+    - 相關欄位
+    - 哪些規則會
+    - 受哪些
+    - depends
+    - control
+    - affect
+    - relationship
+    - phụ thuộc
+    - ảnh hưởng
+  comparison:
+    - 比較
+    - 差異
+    - 不同
+    - 共同
+    - 相同
+    - vs
+    - versus
+    - so sánh
+    - khác nhau
+  field_lookup:
+    - 欄位
+    - field
+    - 輸入欄位
+    - 輸出欄位
+    - 有哪些欄位
+    - trường
+    - danh sách trường
+  reference:
+    - 來源
+    - 參照
+    - reference
+    - nguồn
+  concept:
+    - 是什麼意思
+    - 什麼概念
+    - 定義
+    - 概念
+    - meaning
+    - khái niệm
+    - định nghĩa là gì
+
+# Terms that mark a query as asking about rules rather than a field list.
+rule_terms:
+  - 規則
+  - 限制
+  - 條件
+  - 例外
+  - 流程
+  - 定義
+  - rule
+  - constraint
+  - exception
+  - process
+  - quy tắc
+  - điều kiện
+  - ngoại lệ
+  - quy trình
+
+# Target mode: which layer answers the question.
+target_mode:
+  literal:
+    - 原文
+    - 原始訊息
+    - 原始文字
+    - 完整訊息
+    - 越文
+    - 越南文
+    - 英文訊息
+    - 中文訊息
+    - 錯誤訊息
+    - 提示訊息
+    - 顯示什麼
+    - 顯示的文字
+    - error message
+    - validation message
+    - message text
+    - exact wording
+    - nguyên văn
+    - văn bản gốc
+    - thông báo lỗi
+    - thông báo gốc
+    - hiển thị gì
+  structured_fact:
+    - 元件類型
+    - 欄位類型
+    - 原始值
+    - 原始名稱
+    - 選項值
+    - 最大長度
+    - 最小長度
+    - 功能代碼
+    - component type
+    - field type
+    - return code
+    - error code
+    - max length
+    - min length
+    - maxlength
+    - minlength
+    - placeholder
+    - label
+    - option value
+    - loại component
+    - độ dài tối đa
+    - mã lỗi
+    - giá trị gốc
+
+# Box relation inference for topology questions.
+box_relations:
+  uses_function:
+    - 功能
+    - 使用
+    - uses
+    - chức năng
+  depends_on:
+    - 依賴
+    - depends
+    - phụ thuộc
+  precedes:
+    - 之前
+    - 之後
+    - 先後
+    - 順序
+    - precedes
+    - before
+    - after
+    - trước
+    - sau
+  shared_with:
+    - 共享
+    - 共用
+    - shared
+    - dùng chung
+  related_to:
+    - 關聯
+    - 相關
+    - related
+    - liên quan
+
+# Card Type narrowing for knowledge-intent questions.
+card_types:
+  Exception:
+    - 例外
+    - exception
+    - ngoại lệ
+  Definition:
+    - 定義
+    - definition
+    - định nghĩa
+  Process:
+    - 流程
+    - process
+    - quy trình
+  Rule:
+    - 規則
+    - 限制
+    - 條件
+    - rule
+    - constraint
+    - quy tắc
+    - điều kiện
+
+# Language hints. When a question names a source language ("越文錯誤訊息",
+# "Vietnamese message"), Evidence retrieval prefers records whose
+# Source Language matches, instead of returning whichever literal ranked first.
+# Falls back to all languages when the filter finds nothing.
+language_hints:
+  vi:
+    - 越文
+    - 越南文
+    - vietnamese
+    - tieng viet
+    - tiếng việt
+  zh-TW:
+    - 中文
+    - 繁中
+    - 繁體
+    - chinese
+  en:
+    - 英文
+    - english
+  th:
+    - 泰文
+    - thai

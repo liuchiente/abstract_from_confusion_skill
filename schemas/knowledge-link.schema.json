@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "Link ID",
+    "Source Card ID",
+    "Link Type",
+    "Target Card ID",
+    "Evidence"
+  ],
+  "properties": {
+    "Link ID": {
+      "type": "string",
+      "pattern": "^LINK-[0-9]{6}$"
+    },
+    "Source Card ID": {
+      "type": "string"
+    },
+    "Link Type": {
+      "enum": [
+        "instance_of",
+        "belongs_to",
+        "applies_to",
+        "defines",
+        "controls",
+        "depends_on",
+        "references",
+        "conflicts_with",
+        "replaces",
+        "alias_of"
+      ],
+      "description": "belongs_to is legacy-only: contextual membership belongs to Step 3 Box Membership. validate_links.py warns on any belongs_to link."
+    },
+    "Target Card ID": {
+      "type": "string"
+    },
+    "Evidence": {
+      "type": "string"
+    },
+    "Link Basis": {
+      "enum": [
+        "Direct Source",
+        "Inherited Context",
+        "Semantic Supported"
+      ]
+    },
+    "Source Reference": {
+      "type": "string"
+    }
+  },
+  "title": "AFC Card Link"
+}

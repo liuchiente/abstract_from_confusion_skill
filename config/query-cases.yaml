@@ -1,0 +1,105 @@
+# AFC query benchmark cases.
+#
+# These are EXECUTED by scripts/run_query_benchmark.py, not documentation:
+#
+#   ./afc run_query_benchmark.py --db work/query-index/afc-query.db \
+#       --cases config/query-cases.yaml -o work/query-runs/benchmark.json \
+#       --baseline work/query-runs/baseline.json
+#
+# `expected_resolution` asserts how the planner read the question;
+# `expect` asserts what came back. Omit any key you do not want asserted.
+# A case that cannot run counts as a failure, and a case that regressed from the
+# baseline fails the whole benchmark.
+#
+# This is the working copy the benchmark reads; config/query-cases.example.yaml
+# keeps the shipped defaults. Replace these with your own corpus's cases: they
+# are written against the shipped fixture and will not all pass on your data.
+
+queries:
+  - id: Q001-semantic-business-context
+    query: 車險生效日期有哪些規則？
+    expected_resolution:
+      business_contexts: [車險]
+      scopes: [CA, CB]
+      target_mode: semantic
+      box_hops: 0
+      card_hops: 0
+    expect:
+      min_cards: 1
+      max_product_leakage: 0
+
+  - id: Q002-hard-box-boundary
+    query: CA 確認頁 Back 的行為是什麼？
+    expected_resolution:
+      scopes: [CA]
+      target_mode: semantic
+      boxes:
+        - type: Screen
+          name: 確認頁
+        - type: Function
+          name: Back
+      box_hops: 0
+    expect:
+      min_cards: 1
+      max_product_leakage: 0
+
+  - id: Q003-literal-source-message
+    query: 無法加買時，來源文件的原始錯誤訊息是什麼？
+    expected_resolution:
+      target_mode: literal
+    expect:
+      min_evidence: 1
+      max_product_leakage: 0
+
+  - id: Q004-literal-in-a-named-language
+    # The answer must come back in the language the question named, not in
+    # whichever literal happened to rank first.
+    query: 無法加買時原始的越文錯誤訊息是什麼？
+    expected_resolution:
+      target_mode: literal
+      source_languages: [vi]
+    expect:
+      min_evidence: 1
+
+  - id: Q005-structured-source-fact
+    query: 保單號碼的原始元件類型是什麼？
+    expected_resolution:
+      target_mode: structured_fact
+    expect:
+      min_evidence: 1
+
+  - id: Q006-short-cjk-query
+    # Regression guard: a short Chinese query used to match nothing, because an
+    # unbroken CJK run of four characters or fewer was indexed as one token.
+    query: 加買失敗
+    expect:
+      min_cards: 1
+      min_evidence: 1
+
+  - id: Q007-question-in-the-source-language
+    # A Vietnamese-speaking PM asking in Vietnamese must still reach the
+    # Evidence layer that holds the Vietnamese source strings.
+    query: Thông báo lỗi khi tải lên thất bại là gì?
+    expected_resolution:
+      target_mode: literal
+    expect:
+      min_evidence: 1
+
+  - id: Q008-box-topology-one-hop
+    query: 投保流程用了哪些功能？
+    expected_resolution:
+      intent: box_relationship
+      box_hops: 1
+
+  - id: Q009-card-link-one-hop
+    query: 哪些規則會控制生效日期？
+    expected_resolution:
+      intent: relationship
+      card_hops: 1
+
+  - id: Q010-scope-must-not-leak
+    query: CA 的加買限制是什麼？
+    expected_resolution:
+      scopes: [CA]
+    expect:
+      max_product_leakage: 0

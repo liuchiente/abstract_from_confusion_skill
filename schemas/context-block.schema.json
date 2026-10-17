@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "Context ID",
+    "Content",
+    "Detected Scopes",
+    "Source",
+    "Source Location"
+  ],
+  "properties": {
+    "Context ID": {
+      "type": "string",
+      "pattern": "^CTX-[0-9]{6}$"
+    },
+    "Context Type": {
+      "enum": [
+        "Document",
+        "Section",
+        "Subsection",
+        "Use Case",
+        "Table Context",
+        "Paragraph Context",
+        "Other"
+      ]
+    },
+    "Title": {
+      "type": "string"
+    },
+    "Content": {
+      "type": "string"
+    },
+    "Parent Context ID": {
+      "type": "string"
+    },
+    "Requested Business Contexts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Detected Business Contexts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Resolved Active Scopes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Detected Scopes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Active Scope Match": {
+      "type": "boolean"
+    },
+    "Scope Evidence": {},
+    "Scope Evidence Type": {
+      "type": "string"
+    },
+    "Scope Basis": {
+      "enum": [
+        "Direct Source",
+        "Structural Inheritance",
+        "Business Context Mapping",
+        "Mixed",
+        "Unresolved"
+      ]
+    },
+    "Scope Status": {
+      "enum": [
+        "Confirmed",
+        "Multiple",
+        "Unresolved",
+        "Conflict"
+      ]
+    },
+    "Source": {
+      "type": "string"
+    },
+    "Source Location": {
+      "type": "string"
+    },
+    "Evidence Type": {
+      "type": "string"
+    },
+    "Source Version": {
+      "type": "string"
+    },
+    "Source Date": {
+      "type": "string"
+    },
+    "Source Unit IDs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Knowledge Signal Types": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "Semantic Knowledge",
+          "Literal Knowledge",
+          "Structured Fact",
+          "Structural Context"
+        ]
+      }
+    },
+    "Knowledge Signal Kinds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Knowledge Signal Basis": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Knowledge Relevance Candidate": {
+      "type": "boolean"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Review Verdict Row",
+  "description": "One JSONL row per sampled item. The reviewer records a verdict, never a rate: compute_review_metrics.py derives the rate and refuses verdicts that do not cover exactly the drawn sample.",
+  "type": "object",
+  "required": ["item_id", "verdict"],
+  "properties": {
+    "purpose": {"enum": ["saturation", "fidelity", "atomicity"]},
+    "item_type": {"enum": ["source_unit", "card", "evidence", "mixed"]},
+    "item_id": {"type": "string", "minLength": 1},
+    "verdict": {
+      "enum": [
+        "complete", "missing_card", "missing_evidence", "missing_both",
+        "supported", "unsupported_claim", "altered_literal", "dropped_structured_fact",
+        "atomic_keep", "split_required", "ambiguous"
+      ]
+    },
+    "note": {"type": "string"}
+  },
+  "additionalProperties": true
+}

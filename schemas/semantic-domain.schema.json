@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Semantic Knowledge Domain",
+  "type": "object",
+  "required": ["Domain Key", "Canonical Label", "Status"],
+  "properties": {
+    "Domain Key": {"type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"},
+    "Canonical Label": {"type": "string", "minLength": 1},
+    "Aliases": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "Parent Keys": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "Status": {"enum": ["Candidate", "Active", "Deprecated", "Retired"]},
+    "Superseded By": {"type": "string"},
+    "Reviewed By": {"type": "string"},
+    "Review Rationale": {"type": "string"},
+    "Created In Release": {"type": "string"},
+    "Notes": {"type": "string"}
+  },
+  "additionalProperties": true
+}

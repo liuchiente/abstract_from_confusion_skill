@@ -1,0 +1,104 @@
+# Portable AFC runtime defaults. Persistent knowledge lives in the Knowledge Base
+# directory passed to scripts/knowledge_base.py, not in this file. The package
+# version is in VERSION; do not restate it here, where it goes stale unnoticed.
+company_context: ./config/company-context.md
+business_context_map: ./config/business-contexts.yaml
+box_taxonomy: ./config/box-taxonomy.yaml
+knowledge_signals: ./config/knowledge-signals.yaml
+query_terms: ./config/query-terms.yaml
+
+source_paths: []
+source_recursive: true
+work_dir: ./work
+output_dir: ./output
+unknown_value: 未定義
+none_value: 無
+
+# Product scopes belong in each source directory's afc-scope.md. These lists
+# are optional run-wide additions; leave empty for directory-managed scope.
+default_business_contexts: []
+active_scopes: []
+excluded_scopes: []
+context_anchors: []
+context_scope_detection: multi
+context_fallback_block_window: 3
+
+source_structure:
+  audit_required: true
+  parse_nested_tables: true
+  extract_text_boxes: true
+  extract_embedded_images: true
+  visual_extraction_when_available: false
+  image_text_pending_is_review: true
+  unsupported_structure_is_review: true
+
+ocr:
+  enabled: true
+  engine: tesseract
+  language: chi_tra+eng+vie
+  min_confidence: 0.75
+  allow_multimodal_fallback: false
+
+context_knowledge_signals:
+  enabled: true
+  recover_within_selected_boundary: true
+  preserve_literal_knowledge: true
+  preserve_structured_facts: true
+  audit_unselected_signal_candidates: true
+  generic_terms_select_headers_only: true
+
+coverage:
+  ledger_required: true
+  accounting_required: 1.0
+
+extraction:
+  # Selected Source Units per Step 1 extraction batch. Lower it for dense
+  # sources where each unit yields several Cards; raise it for sparse ones.
+  max_units_per_batch: 120
+
+card_health:
+  saturation_green_lt: 0.02
+  saturation_yellow_lte: 0.05
+  novelty_green_lt: 0.02
+  novelty_yellow_lte: 0.05
+  atomicity_green_lt: 0.02
+  atomicity_yellow_lte: 0.05
+  review_green_lt: 0.02
+  review_yellow_lte: 0.05
+  unaccounted_required: 0.0
+  unsupported_required: 0.0
+  min_sample_for_rate_grading: 30
+
+skill_triggers:
+  # Floor on observed skill-selection accuracy over config/skill-trigger-cases.yaml.
+  min_accuracy: 0.9
+
+decision:
+  required_when_not_ready: true
+
+query:
+  mode: auto
+  top_k: 12
+  candidate_k: 40
+  rerank_k: 8
+  link_k: 16
+  evidence_k: 16
+  box_expand_k: 12
+  default_box_hops: 0
+  max_box_hops: 1
+  default_card_hops: 0
+  max_card_hops: 1
+  max_query_terms: 12
+
+artifacts:
+  field_master_excel: null
+  card_master_jsonl: ./output/knowledge_card_master.jsonl
+  evidence_master_jsonl: ./output/knowledge_evidence.jsonl
+  card_links_jsonl: ./output/knowledge_links.jsonl
+  card_boxes_jsonl: ./output/knowledge_boxes.jsonl
+  card_box_memberships_jsonl: ./output/knowledge_box_memberships.jsonl
+  box_links_jsonl: ./output/knowledge_box_links.jsonl
+  card_contexts_jsonl: ./output/knowledge_contexts.jsonl
+  query_index_db: ./work/query-index/afc-query.db
+  id_registry: ./work/id-registry.jsonl
+  change_log: ./work/knowledge-change-log.jsonl

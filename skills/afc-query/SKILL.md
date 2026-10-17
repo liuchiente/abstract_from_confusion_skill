@@ -1,6 +1,7 @@
 ---
 name: afc-query
-description: AFC Query Planner with canonical intent, Scope/Box resolution, Card-first retrieval, source-preserving Evidence retrieval, language-aware literal answers, sufficiency checks and bounded recovery/graph expansion.
+description: Answer a question from the accepted Knowledge Base: canonical intent, Scope/Box resolution, Card-first retrieval, source-preserving Evidence for literal answers, a sufficiency check and bounded recovery. Use for 查詢/問問題/這條規則是什麼/原文是什麼/越文錯誤訊息/欄位長度/ask the knowledge base. Not for investigating a suspected gap or conflict (afc-discuss), and it never rescans sources or writes a Card to fill a gap.
+allowed-tools: Bash, Read, Glob, Grep
 ---
 
 # AFC Query — Evidence-seeking Query Planner
@@ -14,7 +15,7 @@ prefer `AFC_KB_ROOT/config/business-contexts.yaml` and
 `AFC_KB_ROOT/config/query-terms.yaml` when present; they travel with its release
 pack and preserve the publisher's query vocabulary.
 
-For a v0.8 workspace query, use `workspace.py query --kb-id <id> --query ...`
+When a workspace catalog is configured, use `workspace.py query --kb-id <id> --query ...`
 so the catalog selects the correct Knowledge Base. Ask which KB ID when the
 user names a field mapped to more than one KB. Search multiple IDs only when
 explicitly requested, and report each KB's results separately before synthesis.
@@ -32,6 +33,37 @@ AFC Query is not raw Top-K search:
 Card and Evidence Record have different jobs. A Card is normalized semantic
 knowledge; an Evidence Record is the source-preserving original fact. The query
 must pick the right layer rather than treating them as interchangeable.
+
+## Fast path for a plain lookup
+
+The sixteen sections below are the full planner. Most questions do not need all
+of it, and walking the whole procedure for 「CA 加買期限幾天？」 costs more than
+the answer is worth. Take the fast path when **all** of these hold:
+
+- the question names one topic and one property, with no comparison and no
+  「哪些…」 enumeration;
+- Scope is unambiguous — given explicitly, or only one KB and one Scope exist;
+- it asks for a fact, not a relationship, a topology or a recommendation.
+
+Then: normalize the question (section 1), classify the target mode (section 2),
+run one retrieval, and answer from what comes back.
+
+```bash
+./afc query_fast.py --db work/query-index/afc-query.db --query '<question>' \
+  -o work/query-runs/<run>.json
+```
+
+Answer only when the retrieved Cards or Evidence Records actually support it,
+and cite them as section 13 requires. Literal answers still come from Evidence
+verbatim.
+
+**Fall back to the full planner** the moment any of this appears: the retrieval
+is insufficient or empty; two candidates disagree; the question turns out to
+span Scopes, Boxes or KBs; it asks for a relationship, a comparison, an
+enumeration or a recommendation; or the answer would need more than the first
+retrieval. Say that you fell back, and why. The fast path is a shortcut through
+the procedure, never a shortcut past sufficiency: an unsupported fast answer is
+worse than a slow one.
 
 ## 1. Normalize the question
 
@@ -166,7 +198,7 @@ or Step 1 loop, recorded through `record_decision.py`.
 
 Before calling two values a conflict, check Scope, Scenario, Box, version, UI vs
 API vs DB, business rule vs technical constraint, and historical vs current
-source. In a persistent v0.6 query, use the accepted Knowledge Base history for
+source. When querying a persistent Knowledge Base, use its accepted history for
 historical values; `work/knowledge-change-log.jsonl` is run-local. A superseded
 value is a lifecycle fact, not a conflict. If unresolved, return
 `Needs Exploration` and preserve all evidence.
@@ -237,3 +269,32 @@ paraphrased.
 - Box relationship question → Box topology ≤ 1 hop
 - Card relationship question → Card Link ≤ 1 hop
 - Scope is always authoritative over Box topology
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-query` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `ensure_query_index.py`
+- `knowledge_base.py` — only `query, index`
+- `query_compare.py`
+- `query_fast.py`
+- `resolve_boxes.py`
+- `workspace.py` — only `query, list`
+
+Not this skill's job:
+
+- rescanning sources because an answer was not found → `afc-discuss`
+- creating or editing a Card to fill a gap → `afc-discuss`
+- answering from an unreviewed run candidate → `afc-publish`
+
+`./afc --scope afc-query` prints this boundary.
+<!-- afc:scope:end -->

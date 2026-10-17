@@ -1,0 +1,84 @@
+# AFC Card Experiment settings
+scope:
+  - 汽車險
+  - 機車險
+  - 車體險
+exclude_scope:
+  - 傷害險
+  - 旅遊險
+company_context: ./config/company-context.md
+business_context_map: ./config/business-contexts.yaml
+box_taxonomy: ./config/box-taxonomy.yaml
+source_paths:
+  - ./input
+source_recursive: true
+
+default_business_contexts: []
+context_anchors:
+  - CA
+active_scopes: []
+context_scope_detection: multi
+context_neighbor_window: 3
+
+# Step 0 knowledge-signal discovery. Signals improve recall inside active structural/scope boundaries; they never widen Scope by themselves.
+
+# Step 0 source-structure ingestion. These controls surface nested/visual source content before knowledge selection.
+source_structure:
+  audit_required: true
+  parse_nested_tables: true
+  extract_text_boxes: true
+  extract_embedded_images: true
+  visual_extraction_when_available: true
+  image_text_pending_is_review: true
+
+context_knowledge_signals:
+  enabled: true
+  recover_within_selected_boundary: true
+  preserve_literal_knowledge: true
+  preserve_structured_facts: true
+  audit_unselected_signal_candidates: true
+
+work_dir: ./work
+output_dir: ./output
+unknown_value: 未定義
+none_value: 無
+
+# Baseline AFC v1 output for A/B comparison.
+field_master_excel: null
+card_master_jsonl: ./output/knowledge_card_master.jsonl
+evidence_master_jsonl: ./output/knowledge_evidence.jsonl
+card_links_jsonl: ./output/knowledge_links.jsonl
+card_boxes_jsonl: ./work/step-card-3-boxes.jsonl
+card_box_memberships_jsonl: ./work/step-card-3-box-memberships.jsonl
+box_links_jsonl: ./work/step-card-3-box-links.jsonl
+card_contexts_jsonl: ./output/knowledge_contexts.jsonl
+query_index_db: ./work/query-index/afc-query.db
+
+query_mode: auto
+query_top_k: 12
+query_candidate_k: 40
+query_rerank_k: 8
+query_link_k: 16
+query_evidence_k: 16
+query_box_expand_k: 12
+query_default_box_hops: 0
+query_max_box_hops: 1
+query_default_card_hops: 0
+query_max_card_hops: 1
+
+coverage_ledger_required: true
+coverage_accounting_required: 1.0
+
+# Card extraction health / human-guided loop thresholds.
+# These are initial decision aids and should be calibrated with project history.
+card_health:
+  saturation_green_lt: 0.02
+  saturation_yellow_lte: 0.05
+  novelty_green_lt: 0.02
+  novelty_yellow_lte: 0.05
+  atomicity_green_lt: 0.02
+  atomicity_yellow_lte: 0.05
+  review_green_lt: 0.02
+  review_yellow_lte: 0.05
+  unaccounted_required: 0.0
+  unsupported_required: 0.0

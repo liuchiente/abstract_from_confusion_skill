@@ -1,0 +1,3 @@
+# Optional structural code parsing; install with Python 3.10 or newer.
+# Grammar files are downloaded once into the AFC runtime cache by prepare_code_parser.py.
+tree-sitter-language-pack==1.22.1

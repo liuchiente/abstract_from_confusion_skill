@@ -1,0 +1,4 @@
+# Optional Python dependency for rendering scanned PDF pages before local OCR.
+# Tesseract and language data are installed separately by the machine owner.
+PyMuPDF>=1.24,<2
+Pillow>=10,<13

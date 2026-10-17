@@ -1,6 +1,7 @@
 ---
 name: afc-curate
-description: Assemble the governed AFC Knowledge Card Master while preserving source evidence, stable IDs, Box memberships/topology, Card Links, conflicts, lifecycle status and context-specific recurrence. Use as AFC Card Experiment Step 4.
+description: AFC Step 4: assemble the governed Knowledge Card Master, preserving source evidence, stable IDs, Box memberships and topology, Card Links, conflicts, lifecycle status and context-specific recurrence. Use for 彙整卡片主檔/Card Master/生命週期狀態/curate. Not for writing the datasets or staging a release (afc-publish), and never renumbers an ID.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # STEP 4 — Knowledge Card Master curation
@@ -60,7 +61,7 @@ Append this run's changes so historical values survive the rebuild:
   --log work/knowledge-change-log.jsonl
 ```
 
-This is the run-local change log. In persistent v0.6, `knowledge_base.py stage`
+This is the run-local change log. With a persistent Knowledge Base, `knowledge_base.py stage`
 creates human-review proposals after publication artifacts are ready; only
 accepted proposals are copied to the Knowledge Base history and next release.
 The pipeline rebuilds Cards from documents every run, so keep accepted history
@@ -131,3 +132,32 @@ Report Added / Resolved / Updated / Unchanged / Removed Confirmed / Conflict wit
 stable IDs and the properties that changed, plus the change-log summary by change
 type. A Card whose wording changed while its evidence basis did not is a
 `Reinterpretation`, not an update to a source fact — keep them distinguishable.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-curate` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `allocate_ids.py`
+- `record_changes.py`
+- `validate_boxes.py`
+- `validate_cards.py`
+- `validate_evidence.py`
+- `validate_links.py`
+- `validate_schema.py`
+
+Not this skill's job:
+
+- renumbering an ID or rewriting an Evidence Record → `afc-cards`
+- publishing into the persistent Knowledge Base → `afc-publish`
+
+`./afc --scope afc-curate` prints this boundary.
+<!-- afc:scope:end -->

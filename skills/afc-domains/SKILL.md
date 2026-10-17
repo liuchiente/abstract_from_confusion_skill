@@ -1,6 +1,7 @@
 ---
 name: afc-domains
-description: Propose and govern readable semantic subtopic keys within one AFC Knowledge Base to improve organization and retrieval; KB ID remains the knowledge-base boundary.
+description: Propose and govern readable semantic subtopic keys (for example motor.passenger_coverage) inside one Knowledge Base, to improve organization and retrieval. Use for 主題分類/子主題/領域鍵/domain key. A Domain Key is not a KB ID, a Scope or a Box, and never widens either; the KB ID stays the knowledge-base boundary. Publishing the registry is afc-update.
+allowed-tools: Bash, Read, Write, Glob, Grep
 ---
 
 # AFC Semantic Subtopics within a Knowledge Base
@@ -11,10 +12,34 @@ classifies a topic inside that KB, for example `motor.passenger_coverage` or
 and it never expands the query beyond the selected KB.
 
 Manage `knowledge_domains.jsonl` as a canonical dataset inside each accepted
-release. Read `$AFC_KB_ROOT/CURRENT.json`, then inspect the registry in the
-pointed-to release before proposing additions or changes. Write candidate
-changes to `output/knowledge_domains.jsonl`; the ordinary staging and release
+release. Read the current registry before proposing anything, and write
+candidates to `output/knowledge_domains.jsonl`; the ordinary staging and release
 review makes them versioned and portable.
+
+## Read the current registry
+
+```bash
+./afc knowledge_base.py validate --kb-root "$AFC_KB_ROOT"      # release integrity first
+```
+
+The accepted release is whatever `$AFC_KB_ROOT/CURRENT.json` points at; its
+registry is `$AFC_KB_ROOT/releases/<release-id>/knowledge_domains.jsonl`. Read
+that file, and never edit it: a release directory is immutable. With a workspace
+catalog, resolve the KB first with `workspace.py list` and
+`workspace.py query --kb-id <id>`.
+
+## Write and check candidates
+
+Copy the accepted registry to `output/knowledge_domains.jsonl` and add or amend
+rows there. For a first release, start from an empty file. Then check the shape
+before anything stages it:
+
+```bash
+./afc validate_schema.py output/knowledge_domains.jsonl
+```
+
+Staging, the per-proposal decisions and the publish belong to `afc-update`: this
+skill proposes, and a candidate key is not an approved one.
 
 ## Domain key rules
 
@@ -52,3 +77,29 @@ Box boundaries remain authoritative.
 Report proposed, accepted, deprecated, and rejected keys; Cards whose tags
 changed; duplicate or ambiguous labels; and any Scope boundary that needed human
 resolution. Do not silently rename a key or relabel a Card to improve retrieval.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-domains` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `knowledge_base.py` — only `query, validate`
+- `validate_schema.py`
+- `workspace.py` — only `query, list`
+
+Not this skill's job:
+
+- assigning a candidate domain key to an accepted Card → the user
+- publishing the domain registry → `afc-update`
+- using a domain tag to widen Scope or cross a KB boundary → the user
+
+`./afc --scope afc-domains` prints this boundary.
+<!-- afc:scope:end -->

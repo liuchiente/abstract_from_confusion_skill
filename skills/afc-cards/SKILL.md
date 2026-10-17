@@ -1,6 +1,7 @@
 ---
 name: afc-cards
-description: Extract source-preserving Evidence Records plus comprehensive atomic Knowledge Cards from AFC Step 0 source units, allocate stable IDs, and produce extraction-health metrics from deterministic review samples. Use as AFC Card Experiment Step 1.
+description: AFC Step 1: write source-preserving Evidence Records and atomic Knowledge Cards from the Step 0 source map, allocate stable IDs from the registry, and measure extraction health from script-drawn review samples. Batches and resumes a large source. Use for 抽卡/建立知識卡/萃取知識/原文保存/來源太大一次做不完/Evidence Record/extract cards/a source too big for one pass. Not for parsing or re-selecting sources (afc-context), and not for Card relationships (afc-links).
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 ---
 
 # STEP 1 — Evidence Records + Atomic Cards + extraction health
@@ -37,75 +38,16 @@ Card Types: `Concept`, `Context`, `Field`, `Rule`, `Definition`, `Process`,
 
 ## Evidence Records
 
-### Preservation rules
+An Evidence Record is what the source literally and structurally contains:
+original wording, labels, messages, component types, codes, values and location.
+It may never be rewritten to match a Card — that is a fidelity defect, and the
+change log will surface it.
 
-For source-derived Evidence, keep the value as found: no translation, no
-terminology normalization, no capitalization changes, no grammar or spelling
-corrections, no rewritten component types, no substituting company-preferred
-terms for source codes or values, and no merging strings of different languages
-into one synthetic string. Collapsing whitespace for storage is fine; changing
-the textual value is not.
-
-If the source says `textbox`, store `Original Component Type = textbox`. If AFC
-prefers a canonical `Text Input`, that interpretation belongs on the Card.
-
-When source text is Vietnamese and AFC adds a Chinese explanation, the
-Vietnamese stays as the Evidence Record and the Chinese is an enrichment with
-its own provenance. Never label a translation as original source text.
-
-### A worked Evidence Record
-
-```json
-{
-  "Evidence ID": "EVD-TMP-001",
-  "Evidence Mode": "VERBATIM+STRUCTURED",
-  "Evidence Kind": "Message",
-  "Original Text": "Tải lên thất bại",
-  "Source Language": "vi",
-  "Original Error Message": "Tải lên thất bại",
-  "Original Code": "E102",
-  "Original Component Type": "textbox",
-  "Original Max Length": "100",
-  "Source": "CA_spec_v2.docx",
-  "Source Location": "Table 3 / Row 7 / Cell 4",
-  "Context ID": "CTX-000012",
-  "Source Unit IDs": ["CA_spec_v2.docx::B000031::T003::R0007"],
-  "Card IDs": ["CARD-TMP-004"]
-}
-```
-
-Write any local placeholder you like for `Evidence ID` and `Card IDs`
-(`EVD-TMP-001`, `tmp:msg-a`). `allocate_ids.py` replaces them with registry IDs
-and rewrites every cross-reference. Do not hand-number IDs: in v0.4.1 the model
-chose the numbers, which meant Card delta, rerun novelty and every Gold baseline
-rested on IDs that drifted between runs.
-
-`Evidence Mode` is `VERBATIM`, `STRUCTURED` or `VERBATIM+STRUCTURED`. Structured
-modes should carry at least one `Original *` field or a `Structured Facts`
-object.
-
-### Literal knowledge is first-class
-
-Preserve the exact source string for error messages, validation messages, UI
-labels, button text, API return messages, codes, enum/option values, original
-field names, product names, and any Vietnamese/English/Chinese string. A question
-asking for the original Vietnamese error message must be answerable from Evidence
-without regeneration.
-
-### Image-derived evidence
-
-For a Source Unit with `kind = image` or a scanned-PDF page: do not build literal Evidence from alt
-text unless the user explicitly asks for alt text; when
-`image_text_status = VISUAL_EXTRACTED`, preserve `visual_original_text` verbatim;
-carry media/page reference, the Source Unit ID and full `structure_path` into
-traceability; record the extraction method (`OCR`, `HUMAN`, or explicitly
-authorized `VISION`) separately from the text. OCR below the configured
-confidence threshold stays `Review`; if recognition is pending, use `Review`
-rather than inventing content.
-
-Image text can produce `Message`, `Label`, `ButtonText`, `ImageText` or
-`VisualEvidence` records. It may support a semantic Card; the visible string
-itself stays Evidence.
+Before writing the first Evidence Record, read
+`references/evidence-records.md`: it holds the preservation rules, a worked
+record, the literal-knowledge list and how image-derived evidence differs. Those
+rules are not optional, and a source-preservation failure is never a reason to
+invent a Card.
 
 ## Knowledge Cards
 
@@ -157,10 +99,53 @@ An Excel cell may carry `formula` alongside `value`, and `value_status =
 NO_CACHED_VALUE` means the workbook holds no computed result. Treat the formula
 as a Structured Fact; do not invent the displayed text.
 
-**Prose, notes and PDF blocks.** Preserve the relevant source text as Evidence
-before normalizing. Evaluate every selected paragraph, bullet, note or block for
-Rules, Definitions, Processes, Conditions, Exceptions, Mappings, References,
-operational Notes and literal messages.
+**Prose, articles and study guides.** A selected paragraph is not automatically
+one Card and a signal match is not a prerequisite for extraction. Work through
+the document by article theme and chapter/section, using `section_heading_path`
+when available. First read the section heading and its substantive paragraphs,
+lists, tables and images together; then decide which independent claims deserve
+Cards. This makes the section a useful review and coverage boundary while
+leaving the Card boundary at the level of a supported, independently queryable
+claim. Do not make one Card for an entire chapter, and do not split a coherent
+claim only because it crosses a page or heading boundary.
+
+Within each section, review every selected Source Unit, using adjacent units to
+resolve the topic, then record a disposition for it. Preserve exact wording as
+Evidence and derive one or more atomic Cards for supported knowledge. One source
+unit may produce several Cards; a Card may cite several Evidence Records when
+they jointly support one claim, including evidence from different sections.
+A long excerpt saved as a `Reference` is a source aid, not a substitute for
+semantic Cards.
+
+`references/extraction-by-source-type.md` gives the strategy per source type —
+articles and manuals, numbered procedures, tables and matrices, charts and
+diagrams, code and configuration, slides and notes — with a worked example. Read
+the entry for the source in front of you.
+
+Knowledge signals support discovery and retrieval; they do not define the full
+universe of useful knowledge. Do not assign `Review` just because a signal rule
+did not match. Use `Skip` for clearly irrelevant material such as repeated
+headers, page numbers and legal footers, with a reason. Use `Review` when the
+source is incomplete, contradictory, visually ambiguous or requires a human
+scope decision. A selected unit left unassessed is a coverage failure.
+
+## A large source is extracted in batches
+
+Step 1 is the one step whose output you write by hand — an Evidence Record per
+preserved source fact, Cards for supported knowledge, one coverage ledger row
+per selected Source Unit — so a large source has a size at which this cannot be
+done in one pass, and guessing where you stopped is not a protocol.
+
+`references/batched-extraction.md` has the procedure: plan the batches with
+`plan_extraction_batches.py`, write each batch to the per-batch paths the plan
+names, prefix placeholder IDs with the batch's `id_prefix`, check each batch
+with `validate_schema.py --draft`, then `merge_extraction_batches.py` and
+allocate IDs once over the merged files. To resume, regenerate the plan with the
+coverage you already have: accounted units drop out.
+
+Batching is a context budget, not a checkpoint for approval. Keep going through
+the batches without stopping to ask, and do not let a batch boundary lower
+extraction quality or leave the hard units for last.
 
 ## Coverage ledger
 
@@ -173,13 +158,19 @@ Every `selected = true` Source Unit gets exactly one ledger row:
 ```
 
 `Review` means the source holds potentially meaningful knowledge whose
-interpretation is not yet safe. Accounting passes when
-`unaccounted_source_units = 0`.
+interpretation is not yet safe. An item not yet examined is work in progress,
+not a Review decision: leave it out of the final coverage ledger until assessed.
+The validator will count it as `unaccounted_source_units`, separately from
+Review. Run final coverage validation only after each selected unit has a
+disposition. For article sources, inspect `by_section` in the report to locate
+sections with missing, reviewed, skipped or card-producing units; a low overall
+Review count does not prove that every section was processed. Accounting passes
+when `unaccounted_source_units = 0`.
 
 ## Allocate stable IDs
 
 Run this before any validation, so everything downstream sees registry IDs.
-For a persistent v0.6 run, export `AFC_KB_ROOT` first so the allocator uses
+With a persistent Knowledge Base, export `AFC_KB_ROOT` first so the allocator uses
 `<KB root>/identity/id-registry.jsonl`. This registry is append-only; rejected
 proposals may reserve IDs, and reserved IDs must never be reused. Standalone
 runs use `work/id-registry.jsonl`.
@@ -196,7 +187,7 @@ Evidence is resolved first because Card identity includes its Evidence IDs. The
 report distinguishes `new`, `reused` and `rebound` (a reworded claim keeping its
 ID) and lists Cards whose identity rests on their Title. Keep the configured
 registry: deleting it renumbers the knowledge base and invalidates every delta
-and Gold baseline. In persistent v0.6 it is
+and Gold baseline. With `AFC_KB_ROOT` set it is
 `$AFC_KB_ROOT/identity/id-registry.jsonl`.
 
 If the coverage ledger used placeholder IDs, rewrite them with the
@@ -221,6 +212,9 @@ Schema first, then the cross-file checks. `validate_cards.py` warns about Cards
 with no `Concept Key`; those warnings are the ID-stability problem showing up
 early.
 
+This pass runs **without** `--draft`: every ID must now be a registry ID. Draft
+mode is for checking a batch before allocation, never for signing off Step 1.
+
 ## Convergence: measured, not self-reported
 
 AFC does not loop until it declares itself complete. Each run produces metrics
@@ -231,85 +225,16 @@ wrote about its own work, on a sample it chose, and were then graded
 GREEN/YELLOW/RED — a self-assessment dressed as a measurement. Now the sample is
 drawn by script and the rate is computed from per-item verdicts.
 
-### Draw the samples
+Measure, do not estimate: draw the samples with `sample_units.py`, record one
+verdict per drawn item, compute the rates with `compute_review_metrics.py`, then
+evaluate health with `evaluate_card_health.py`. The command sequence, the sample
+files and the verdict formats are in `references/health-measurement.md`; the
+verdict vocabularies are in `references/review-verdicts.md`.
 
-```bash
-RUN=$(date +%Y%m%dT%H%M%S)
-
-./afc sample_units.py --purpose saturation --source-map work/step-card-0-source-map.jsonl \
-  -n 40 --run-id "$RUN" -o work/step-card-1-saturation-sample.json \
-  --verdict-template work/step-card-1-saturation-verdicts.jsonl
-
-./afc sample_units.py --purpose fidelity --cards work/step-card-1-cards.jsonl \
-  --evidence work/step-card-1-evidence.jsonl \
-  -n 40 --run-id "$RUN" -o work/step-card-1-fidelity-sample.json \
-  --verdict-template work/step-card-1-fidelity-verdicts.jsonl
-
-./afc sample_units.py --purpose atomicity --cards work/step-card-1-cards.jsonl \
-  -n 40 --run-id "$RUN" -o work/step-card-1-atomicity-sample.json \
-  --verdict-template work/step-card-1-atomicity-verdicts.jsonl
-```
-
-Use at least `card_health.min_sample_for_rate_grading` items (30 by default).
-Below that the green threshold is not expressible: at n=12 the smallest non-zero
-rate is 8.3%, so a 2% green band is meaningless and the metric is graded
-`INSUFFICIENT_SAMPLE` rather than passed.
-
-### Fill in one verdict per sampled item
-
-Fill the template; answer every drawn item and nothing else. Looking only at the
-easy ones is rejected, and so is adding an item you were not given.
-
-```json
-{"purpose":"saturation","item_type":"source_unit","item_id":"CA_spec_v2.docx::B000031::T003::R0009","verdict":"missing_evidence","note":"原始越南文訊息未建立 Evidence Record"}
-{"purpose":"fidelity","item_type":"card","item_id":"CARD-000188","verdict":"unsupported_claim","note":"Card 聲稱 30 天，來源僅寫「期限內」"}
-{"purpose":"atomicity","item_type":"card","item_id":"CARD-000205","verdict":"split_required","note":"同一張卡混合三條獨立規則"}
-```
-
-Verdict vocabularies:
-
-| Purpose | Question per item | Verdicts |
-| --- | --- | --- |
-| saturation | Is any supported knowledge or source-native literal/structured fact still unrepresented? | `complete`, `missing_card`, `missing_evidence`, `missing_both` |
-| fidelity | Is the claim supported, and is every literal/structured source value preserved unaltered? | `supported`, `unsupported_claim`, `altered_literal`, `dropped_structured_fact` |
-| atomicity | Does this Card hold exactly one independently referenceable claim? | `atomic_keep`, `split_required`, `ambiguous` |
-
-A stylistic rewrite is not missing knowledge. A long Card is not automatically a
-split candidate.
-
-### Compute the rates
-
-```bash
-for p in saturation fidelity atomicity; do
-  ./afc compute_review_metrics.py \
-    --sample "work/step-card-1-$p-sample.json" \
-    --verdicts "work/step-card-1-$p-verdicts.jsonl" \
-    -o "work/step-card-1-$p-report.json"
-done
-```
-
-### Evaluate health
-
-```bash
-./afc evaluate_card_health.py \
-  --source-map work/step-card-0-source-map.jsonl \
-  --coverage work/step-card-1-coverage.jsonl \
-  --cards work/step-card-1-cards.jsonl \
-  --evidence work/step-card-1-evidence.jsonl \
-  --saturation-report work/step-card-1-saturation-report.json \
-  --fidelity-report work/step-card-1-fidelity-report.json \
-  --atomicity-report work/step-card-1-atomicity-report.json \
-  --context-health work/step-card-0-context-selection-audit.json \
-  --history work/step-card-1-health-history.jsonl \
-  --json-output work/step-card-1-health.json \
-  --append-history work/step-card-1-health-history.jsonl
-```
-
-Add `--previous-cards` when comparing against the same source/context baseline;
-with stable registry IDs, rerun novelty is now computed rather than estimated.
-Add `--baseline-run` only when the Knowledge Base has no accepted Card release.
-Verified reviews of the full population may be graded as a census even when the
-population is smaller than the configured statistical sample minimum.
+A sample must reach `card_health.min_sample_for_rate_grading` items before a
+rate can be graded at all. Below that the green threshold is not expressible —
+at n=12 the smallest non-zero rate is 8.3%, so a 2% green band is meaningless —
+and the metric is graded `INSUFFICIENT_SAMPLE` rather than passed.
 
 Six Loop Gate metrics: Unaccounted Rate, Saturation Miss Rate, Rerun Novelty
 Rate, Unsupported Claim Rate, Atomicity Issue Rate, Unresolved Review Rate. Each
@@ -372,6 +297,10 @@ knowledge change.
 ## Outputs
 
 ```text
+work/step-card-1-extraction-plan.json   when the source was batched
+work/extraction-batches/<batch-id>-units.jsonl
+work/step-card-1-{cards,evidence,coverage}.<batch-id>.jsonl
+work/step-card-1-merge-report.json
 work/step-card-1-evidence.jsonl
 work/step-card-1-cards.jsonl
 work/step-card-1-coverage.jsonl
@@ -389,3 +318,38 @@ work/step-card-1-health-history.jsonl   optional
 
 Health returns `READY`, `REVIEW_RECOMMENDED` or `RERUN_RECOMMENDED` with a
 primary route. PM/SA owns the decision; `record_decision.py` records it.
+
+<!-- afc:scope:begin -->
+<!-- Generated from config/skill-scopes.yaml by scripts/sync_skill_metadata.py.
+     Edit the manifest, not this block: the `afc` launcher enforces the
+     manifest, so a hand-edited copy here would only disagree with it. -->
+
+## Scope
+
+This skill may cause **work** changes. Set
+`AFC_SKILL=afc-cards` while following it: the `afc` launcher then refuses any
+command outside the scope below and names the skill that owns it.
+
+Commands this skill may run:
+
+- `allocate_ids.py`
+- `compute_review_metrics.py`
+- `evaluate_card_health.py`
+- `merge_extraction_batches.py`
+- `plan_extraction_batches.py`
+- `record_changes.py`
+- `record_decision.py`
+- `sample_units.py`
+- `validate_cards.py`
+- `validate_coverage.py`
+- `validate_evidence.py`
+- `validate_schema.py`
+
+Not this skill's job:
+
+- re-parsing sources or changing Step 0 selection → `afc-context`
+- building Card Links or Boxes → `afc-links`
+- choosing the route when health is not READY → the user
+
+`./afc --scope afc-cards` prints this boundary.
+<!-- afc:scope:end -->

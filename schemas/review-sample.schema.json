@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Review Sample Manifest",
+  "description": "Produced by scripts/sample_units.py. The sample is drawn deterministically from (run_id, purpose, size, strata) so the reviewer cannot choose which items to look at.",
+  "type": "object",
+  "required": ["sample_schema_version", "purpose", "seed", "population", "sample_count", "allowed_verdicts", "items"],
+  "properties": {
+    "sample_schema_version": {"type": "string"},
+    "purpose": {"enum": ["saturation", "fidelity", "atomicity"]},
+    "run_id": {"type": ["string", "null"]},
+    "seed": {"type": "integer"},
+    "strata_fields": {"type": "array", "items": {"type": "string"}},
+    "population": {"type": "integer", "minimum": 0},
+    "requested_sample_size": {"type": "integer", "minimum": 1},
+    "sample_count": {"type": "integer", "minimum": 0},
+    "strata": {"type": "object"},
+    "allowed_verdicts": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item_type", "item_id"],
+        "properties": {
+          "item_type": {"enum": ["source_unit", "card", "evidence", "mixed"]},
+          "item_id": {"type": "string", "minLength": 1},
+          "stratum": {"type": "string"}
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

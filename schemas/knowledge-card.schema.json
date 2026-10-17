@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "Card ID",
+    "Card Type",
+    "Title",
+    "Source",
+    "Source Location"
+  ],
+  "properties": {
+    "Card ID": {
+      "type": "string",
+      "pattern": "^CARD-[0-9]{6}$",
+      "description": "Allocated by scripts/allocate_ids.py from a content-derived identity. Do not hand-number."
+    },
+    "Card Type": {
+      "enum": [
+        "Concept",
+        "Context",
+        "Field",
+        "Rule",
+        "Definition",
+        "Process",
+        "Condition",
+        "Mapping",
+        "Exception",
+        "Reference",
+        "Note"
+      ]
+    },
+    "Title": {
+      "type": "string"
+    },
+    "Content": {
+      "type": "string"
+    },
+    "Original Evidence": {
+      "type": "string",
+      "description": "Backward-compatible convenience excerpt. Canonical source-preserving data belongs in Evidence Records."
+    },
+    "Language": {
+      "type": "string"
+    },
+    "Concept Key": {
+      "type": "string",
+      "description": "Stable name of the claim/concept. Strongly recommended on every non-Concept Card: it is the primary input to the Card ID identity."
+    },
+    "Scope": {
+      "type": "string"
+    },
+    "Context": {
+      "type": "string"
+    },
+    "Box IDs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Related Card IDs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Source": {
+      "type": "string"
+    },
+    "Source Location": {
+      "type": "string"
+    },
+    "Evidence Type": {
+      "type": "string"
+    },
+    "Source Version": {
+      "type": "string"
+    },
+    "Source Date": {
+      "type": "string"
+    },
+    "中文補充": {
+      "type": "string"
+    },
+    "中文補充依據": {
+      "type": "string"
+    },
+    "Notes": {
+      "type": "string"
+    },
+    "Source Unit IDs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Evidence Record IDs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EVD-[0-9]{6}$"
+      }
+    },
+    "Status": {
+      "enum": [
+        "Active",
+        "Superseded",
+        "Retired"
+      ],
+      "description": "Lifecycle state. Written by allocate_ids.py (default Active) and by afc-curate."
+    },
+    "First Seen Run": {
+      "type": "string",
+      "description": "Run id in which this identity first entered the registry."
+    },
+    "Last Seen Run": {
+      "type": "string",
+      "description": "Most recent run id that produced this identity."
+    },
+    "Claim Key": {
+      "type": "string",
+      "description": "Disambiguates several claims extracted from one source coordinate. Together with Concept Key this is what keeps a Card ID stable when the wording changes; without either, identity falls back to Title and the ID churns on every rewrite (allocate_ids.py reports this)."
+    },
+    "Semantic Domain Keys": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"},
+      "description": "Human-governed domain labels for discovery. They do not define product Scope or Card identity."
+    },
+    "Semantic Domain Labels": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Readable labels copied from the accepted Knowledge Domain registry for search and review."
+    },
+    "Scopes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multi-scope form of Scope; either may be used."
+    },
+    "Supersedes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^CARD-[0-9]{6}$"
+      }
+    },
+    "Superseded By": {
+      "type": "string",
+      "pattern": "^CARD-[0-9]{6}$"
+    }
+  },
+  "title": "AFC Knowledge Card"
+}

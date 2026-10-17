@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AFC Visual Extraction",
+  "type": "object",
+  "required": ["source_unit_id"],
+  "properties": {
+    "source_unit_id": {"type": "string"},
+    "original_text": {"type": "string"},
+    "source_language": {"type": ["string", "null"]},
+    "extraction_method": {"enum": ["VISION", "OCR", "HUMAN"]},
+    "confidence": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "text"],
+        "properties": {
+          "kind": {"type": "string"},
+          "text": {"type": "string"},
+          "region": {},
+          "notes": {"type": ["string", "null"]}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "anyOf": [
+    {"required": ["original_text"]},
+    {"required": ["items"]}
+  ],
+  "additionalProperties": true
+}

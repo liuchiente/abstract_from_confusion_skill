@@ -78,9 +78,14 @@ def main():
             m['signal_selected'] += 1
             continue
         m['signal_unselected'] += 1
-        # Absent the annotation (a legacy source map) treat it as in-boundary so
-        # the audit stays conservative rather than silently passing.
-        within = r.get('signal_within_selected_boundary', True)
+        # Actionability is decided by the scope boundary -- the file proved it
+        # belongs to the active Scope by having a selected unit -- not by the
+        # structural boundary, which exists to gate auto-recovery and which no
+        # prose unit can ever satisfy. A legacy source map carries neither
+        # annotation, and is treated as in-boundary so the audit stays
+        # conservative rather than silently passing.
+        within = r.get('signal_within_scope_boundary',
+                       r.get('signal_within_selected_boundary', True))
         if within and not structural_only:
             m['signal_unselected_within_boundary'] += 1
             if 'Literal Knowledge' in types:

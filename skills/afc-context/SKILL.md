@@ -277,11 +277,25 @@ Step 0 gap), or ambiguous (Review).
 
 The audit separates two very different numbers:
 
-- `signal_unselected_within_boundary` — **actionable**. A signal candidate inside
-  an already selected boundary was not selected. This is the failure this step
-  exists to prevent.
-- `signal_unselected_outside_boundary` — reported, not a finding. Those units are
-  out of Active Scope.
+- `signal_unselected_within_boundary` — **actionable**. A signal candidate was
+  left behind in a file that has at least one selected unit, so the document
+  proved by direct evidence that it belongs to the Active Scope. This is the
+  failure this step exists to prevent, and it is reported whether or not a
+  structural sibling was selected: a paragraph has no table or sheet around it,
+  and a literal lost in prose is lost just the same.
+- `signal_unselected_outside_boundary` — reported, not a finding. Nothing in the
+  file was selected, so it is out of Active Scope. Sitting in a directory whose
+  `afc-scope.md` names the Scope is not enough; a file can be in that directory
+  and be entirely about another product.
+
+Two different boundaries, for two different questions. Reporting asks whether a
+miss deserves attention, and uses the test above
+(`signal_within_scope_boundary`). Auto-recovery asks whether a unit may be
+selected without direct evidence, and keeps the stricter structural test
+(`signal_within_selected_boundary`): a selected row in the same table, the same
+contiguous Excel segment, the same PDF page. That strictness is what stops a
+generic term such as `message` from widening product Scope, so an actionable
+miss is for a person to resolve, not something the run quietly fixes.
 
 ## Outputs
 

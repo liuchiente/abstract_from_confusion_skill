@@ -391,6 +391,52 @@ def boundary_membership(records,state):
     return within
 
 
+def reporting_division(record):
+    """The division a miss is judged within: the nearest container that can
+    carry a Scope of its own.
+
+    A structured source divides itself, and those divisions often are the scope
+    boundary -- one spec workbook with a sheet per product, one table per
+    screen. Prose does not: a section inside a product document is a topic, not
+    another product. So a sheet, a table and a page are divisions; a paragraph
+    belongs to its document.
+    """
+    kind = record.get('kind')
+    if kind == 'sheet-row':
+        return ('sheet', record.get('sheet'))
+    if kind == 'table-row':
+        return ('table', record.get('table'))
+    if kind == 'pdf-block':
+        return ('page', record.get('page'))
+    return ('file', None)
+
+
+def scope_boundary_membership(records,state):
+    """Whether a miss is worth a human's attention.
+
+    `boundary_membership` answers a stricter question -- may this unit be
+    auto-selected -- and knows three structures: a table with a selected row, a
+    contiguous Excel segment, a PDF page. A paragraph is none of them, so no
+    prose unit was ever "within a boundary", and every signal miss in a Word or
+    Markdown source was reported as not-a-finding.
+
+    Reporting needs a weaker test, but not an absent one. A division with at
+    least one selected unit has shown by direct evidence that it belongs to the
+    active Scope, so a signal-bearing unit left behind in it is a gap in this
+    run. A division where nothing was selected is a boundary decision: the
+    旅遊險 sheet of a workbook whose CA sheet was selected is out of scope, and
+    saying otherwise would make every multi-product workbook a page of
+    findings.
+
+    Directory eligibility is not evidence either: a file can sit in a CB
+    directory and be entirely about another product.
+    """
+    selected_divisions = {reporting_division(r)
+                          for i, r in enumerate(records) if state[i]['selected']}
+    return [(not state[i]['selected']) and reporting_division(r) in selected_divisions
+            for i, r in enumerate(records)]
+
+
 def recover_signal_units_within_selected_boundaries(records,state,signals,within):
     """Select signal-bearing units only inside a structurally selected boundary.
 
@@ -573,6 +619,9 @@ def main():
                             else ('Selected:CodeSymbol' if row.get('parent_kind') in {'code-module','code-symbol'}
                                   else 'Selected:KnowledgeSignal'))
             within=boundary_membership(recs,state)
+            # Reporting uses the weaker, evidence-based boundary; recovery keeps
+            # the structural one, so selection is unchanged by this distinction.
+            in_scope_boundary=scope_boundary_membership(recs,state)
             recovered=0 if a.no_knowledge_signal_recovery else recover_signal_units_within_selected_boundaries(recs,state,signals,within)
             report['signal_units_recovered']+=recovered
             report['nested_structure_units_propagated']+=nested_propagated
@@ -580,6 +629,7 @@ def main():
             for i,r in enumerate(recs):
                 out=dict(r); out.update(state[i]); out.update(signals[i])
                 out['signal_within_selected_boundary']=bool(within[i])
+                out['signal_within_scope_boundary']=bool(in_scope_boundary[i])
                 out['requested_business_contexts']=requested_business_contexts; out['resolved_active_scopes']=list(dict.fromkeys(scope for m in eligible_memberships for scope in (m.get('allowed_scopes') or [])))
                 out['source_memberships']=[{
                     'root':m.get('root'),'relative_path':m.get('relative_path'),
@@ -605,7 +655,9 @@ def main():
                         file_signal_selected+=1; report['signal_candidates_selected']+=1
                     else:
                         report['signal_candidates_unselected']+=1
-                        if within[i] and not signals[i].get('knowledge_signal_is_structural_only'):
+                        actionable_miss=(in_scope_boundary[i]
+                                         and not signals[i].get('knowledge_signal_is_structural_only'))
+                        if actionable_miss:
                             report['signal_unselected_within_boundary']+=1
                         else:
                             report['signal_unselected_outside_boundary']+=1

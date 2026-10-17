@@ -136,18 +136,25 @@ def test_a_known_limitation_still_behaves_as_recorded(step0, limitation):
     Pinning them means a fix shows up as a deliberate expectation change rather
     than a silent shift, and the file says what to do when it flips.
     """
-    if 'units' in limitation:
-        selected = {u['source_unit_id'] for u in step0['units'] if u.get('selected')}
+    check = limitation.get('check', 'selection')
+    units = {u['source_unit_id']: u for u in step0['units']}
+    if check == 'selection':
+        selected = {uid for uid, u in units.items() if u.get('selected')}
         actual = {'selected' if unit in selected else 'unselected'
                   for unit in limitation['units']}
-        assert actual == {limitation['current']}, (
-            f"{limitation['id']}: recorded as {limitation['current']}, now {sorted(actual)}. "
-            f"{limitation['if_this_changes']}")
+        expected = {limitation['current']}
+    elif check == 'signal_types':
+        actual = sorted({t for unit in limitation['units']
+                         for t in units[unit].get('knowledge_signal_types') or []})
+        expected = sorted(limitation['current'])
+    elif check == 'report_field':
+        actual = step0['report'].get(limitation['report_field'])
+        expected = limitation['current']
     else:
-        field = limitation['report_field']
-        assert step0['report'].get(field) == limitation['current'], (
-            f"{limitation['id']}: {field} was {limitation['current']}, now "
-            f"{step0['report'].get(field)}. {limitation['if_this_changes']}")
+        raise AssertionError(f'unknown check: {check}')
+    assert actual == expected, (
+        f"{limitation['id']}: recorded as {expected}, now {actual}. "
+        f"{limitation['if_this_changes']}")
 
 
 # --- Step 1: the scorer, exercised on a reference extraction --------------
@@ -339,3 +346,104 @@ def test_the_floors_come_from_settings():
         'a named source string must be preserved exactly; there is no sensible '
         'floor below 1.0')
     assert 0 < settings.get('gold.min_claim_coverage') <= 1.0
+
+
+# --- change 002: an actionable miss is reported as one --------------------
+
+@source_only
+def test_a_prose_miss_in_an_in_scope_file_is_actionable(step0):
+    """One flag was answering two questions.
+
+    `boundary_membership` gates auto-recovery and knows three structures: a
+    table with a selected row, a contiguous Excel segment, a PDF page. A
+    paragraph is none of them, so no prose unit was ever "within a boundary"
+    and every signal miss in a Word or Markdown source was reported under
+    `outside_boundary`, which AGENTS.md calls not a finding.
+    """
+    expected = EXPECTED_STEP0['expected_report']
+    report = step0['report']
+    assert report['signal_unselected_within_boundary'] == \
+        expected['signal_unselected_within_boundary']
+    assert report['signal_unselected_outside_boundary'] == \
+        expected['signal_unselected_outside_boundary']
+
+    misses = [u for u in step0['units']
+              if u.get('knowledge_relevance_candidate') and not u.get('selected')]
+    actionable = [u['source_unit_id'] for u in misses
+                  if u.get('signal_within_scope_boundary')]
+    assert actionable == expected['actionable_source_unit_ids']
+
+
+@source_only
+def test_the_two_boundaries_are_distinct(step0):
+    """The point of the change: a unit can be reportable without being recoverable."""
+    diverging = [u for u in step0['units']
+                 if u.get('signal_within_scope_boundary')
+                 and not u.get('signal_within_selected_boundary')]
+    assert diverging, (
+        'no unit distinguishes the scope boundary from the structural one, so the '
+        'reporting fix has no effect and one of the two tests is wrong')
+    assert all(not u.get('selected') for u in diverging)
+
+
+@source_only
+def test_a_miss_in_an_out_of_scope_file_is_not_a_finding(step0):
+    """other_product.md sits in a CB directory and is entirely about another product."""
+    out_of_scope = [u for u in step0['units']
+                    if u['source_unit_id'].startswith('other_product.md')]
+    assert out_of_scope, 'the out-of-scope fixture produced no units'
+    assert all(not u.get('signal_within_scope_boundary') for u in out_of_scope), (
+        'a file with no selected unit has not shown it belongs to the active Scope; '
+        'a miss in it is a boundary decision, not a gap')
+
+
+@source_only
+def test_recovery_still_requires_a_structural_boundary(step0):
+    """Change 002 must not have altered what gets selected."""
+    recovered = [u for u in step0['units']
+                 if 'Recovered:KnowledgeSignalWithinSelectedBoundary'
+                 in (u.get('selection_reasons') or u.get('context_match_reasons') or [])]
+    assert not recovered, (
+        'a unit was auto-recovered in the gold run. Selection changes extraction '
+        'output; that belongs in its own change, not in a reporting fix.')
+    per_file = {}
+    for unit in step0['units']:
+        name = unit['source_unit_id'].split('::')[0]
+        bucket = per_file.setdefault(name, {'units': 0, 'selected': 0})
+        bucket['units'] += 1
+        bucket['selected'] += bool(unit.get('selected'))
+    assert per_file == EXPECTED_STEP0['per_file']
+
+
+@source_only
+def test_the_validator_agrees_with_the_run_report(step0, tmp_path):
+    """Two scripts classify the same thing; they must not disagree."""
+    out = tmp_path / 'audit.json'
+    proc = run_script('validate_context_selection.py',
+                      '--source-map', str(step0['work'] / 'source-map.jsonl'),
+                      '--json-output', str(out), cwd=step0['base'])
+    audit = json.loads(proc.stdout)
+    expected = EXPECTED_STEP0['expected_report']
+    assert audit['signal_unselected_within_boundary'] == \
+        expected['signal_unselected_within_boundary']
+    assert audit['signal_unselected_outside_boundary'] == \
+        expected['signal_unselected_outside_boundary']
+    assert [x['source_unit_id'] for x in audit['actionable_source_unit_ids']] == \
+        expected['actionable_source_unit_ids']
+
+
+@source_only
+def test_a_legacy_source_map_without_the_annotation_stays_conservative(tmp_path):
+    """An old source map carries neither flag; the audit must not pass silently."""
+    legacy = tmp_path / 'source-map.jsonl'
+    legacy.write_text(json.dumps({
+        'source_unit_id': 'old.docx::B000001', 'kind': 'paragraph', 'selected': False,
+        'knowledge_relevance_candidate': True, 'knowledge_signal_types': ['Literal Knowledge'],
+        'value': 'Tải lên thất bại',
+    }, ensure_ascii=False) + '\n', encoding='utf-8')
+    proc = run_script('validate_context_selection.py', '--source-map', str(legacy),
+                      cwd=tmp_path)
+    audit = json.loads(proc.stdout)
+    assert audit['signal_unselected_within_boundary'] == 1, (
+        'a source map with no boundary annotation must be treated as in-boundary, '
+        'so an old run is reviewed rather than quietly passed')

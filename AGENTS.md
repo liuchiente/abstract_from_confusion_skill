@@ -197,7 +197,11 @@ may create an Evidence Record without needing a standalone Card.
 
 Two audit numbers mean different things: `signal_unselected_within_boundary` is
 actionable; `signal_unselected_outside_boundary` is out of scope and not a
-finding.
+finding. A miss is actionable when its file has at least one selected unit —
+the document proved it belongs to the Active Scope — and that test is
+deliberately weaker than the structural boundary that gates auto-recovery. One
+flag answering both questions meant no prose unit could ever be actionable,
+since a paragraph has no table or page around it.
 
 ## Convergence and the human loop
 

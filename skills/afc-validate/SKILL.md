@@ -90,8 +90,11 @@ Accounting alone does not prove Context recall.
 
 Audit Step 0 signal recall using
 `work/step-card-0-context-selection-audit.json`, reading the two numbers
-separately: `signal_unselected_within_boundary` is actionable;
-`signal_unselected_outside_boundary` is out of scope and not a finding. Then
+separately: `signal_unselected_within_boundary` is actionable — a signal
+candidate left behind in a file that has selected units — while
+`signal_unselected_outside_boundary` covers files where nothing was selected and
+is not a finding. Report the actionable unit IDs the audit names; they are a
+Step 0 gap for a person to resolve, not something a rerun fixes on its own. Then
 compare Literal Evidence Coverage and Structured Fact Evidence Coverage from the
 health report.
 
